@@ -308,6 +308,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
 
           {step < 3 ? (
             <button
+              key="wizard-next"
               type="button"
               onClick={next}
               className="group ml-auto flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99]"
@@ -318,6 +319,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
             </button>
           ) : (
             <button
+              key="wizard-submit"
               type="submit"
               disabled={submitting}
               className="ml-auto flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
