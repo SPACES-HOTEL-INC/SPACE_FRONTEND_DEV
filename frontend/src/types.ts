@@ -58,3 +58,56 @@ export interface NavItem {
   label: string
   icon: LucideIcon
 }
+
+// ── Manage Rooms ───────────────────────────────────────────────────────────
+export interface Amenity {
+  id: string
+  label: string
+  icon: LucideIcon
+}
+
+export interface RoomType {
+  id: string
+  title: string
+  description: string
+  price: number
+  currency: string // symbol, e.g. "$"
+  inventory: number
+  capacity: string // '1' | '2' | '3' | '4+'
+  amenities: string[] // amenity ids
+  images: string[]
+  status: 'active' | 'draft'
+}
+
+// ── Bookings ───────────────────────────────────────────────────────────────
+export type BookingStatus = 'Pending' | 'Confirmed' | 'Checked-In' | 'Completed' | 'Cancelled'
+
+export interface Booking {
+  id: string
+  guest: string
+  initials: string
+  roomType: string
+  checkIn: string
+  checkOut: string
+  nights: number
+  amount: number
+  status: BookingStatus
+}
+
+// ── Payouts ────────────────────────────────────────────────────────────────
+export type PayoutStatus = 'Processing' | 'Completed' | 'Failed'
+
+export interface PayoutRecord {
+  id: string
+  date: string
+  amount: number
+  reference: string
+  status: PayoutStatus
+}
+
+export interface PayoutFinance {
+  totalIncome: number
+  platformFee: number
+  pendingClearance: number
+  withdrawnFunds: number
+}
