@@ -37,8 +37,21 @@ static dashboard data.
 - 100% responsive (wide/laptop/mobile), touch-friendly targets, micro-animations.
 
 ## Backlog / Next Action Items
-- P1: Wire real backend (FastAPI + MongoDB) for auth + dashboard data.
-- P1: Build out Manage Rooms, Bookings, Payouts sections (currently placeholders).
-- P2: Form validation + inline error states on the wizard.
+- P1: Wire real backend (FastAPI + MongoDB) for auth + dashboard/rooms/bookings/payouts data.
+- P2: Form validation + inline error states on the room form (clamp negative price/inventory).
 - P2: Capacitor config + native packaging (`dist/` build ready).
-- P2: Real file upload handling in the KYC dropzone.
+- P2: Real file upload handling (currently a mock URL pool) in the room image matrix.
+- P3: Confirm-before-close on dirty room form; centralise business constants (MIN_WITHDRAWAL, fees).
+
+## Update — 2026-06-14 (Tabs build-out)
+- Made sidebar tabs functional: `Dashboard.tsx` is now a tab router on `activeNav`
+  (overview | rooms | bookings | payouts) rendering the matching sub-panel.
+- **Manage Rooms**: card grid of room types + "Add New Room Type" slide-over
+  (`RoomFormPanel`) with title/description/pricing+currency/inventory/capacity/amenities
+  and a mock image matrix enforcing the strict 3–7 image rule (Save gated + dynamic helper).
+- **Bookings**: filterable reservation ledger (search by guest + status filter); inline
+  Confirmed→Check In→Checked-In→Check Out→Completed transitions with toasts.
+- **Payouts**: 3 financial widgets (Total Earnings / Available Balance via
+  `Total − (Fee + Pending + Withdrawn)` / Pending Clearance), bank settings card,
+  withdrawal button disabled when balance < $50, and a historic payout ledger.
+- Global `app-toast` shared by all tabs. Verified 100% by testing agent (iteration_3).
