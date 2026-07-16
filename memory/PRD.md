@@ -55,3 +55,16 @@ static dashboard data.
   `Total − (Fee + Pending + Withdrawn)` / Pending Clearance), bank settings card,
   withdrawal button disabled when balance < $50, and a historic payout ledger.
 - Global `app-toast` shared by all tabs. Verified 100% by testing agent (iteration_3).
+
+## Update — 2026-06-14 (Manage Rooms polish)
+- Currency selector restricted to **USD ($) and NGN (₦)**; room cards render the
+  chosen symbol dynamically ($420/night, ₦180,000/night).
+- New **image carousel** on every room card (`RoomImageCarousel`): crisp
+  `aspect-[4/3]` + `object-cover`, hover/tap chevrons, dot indicators, cycles the
+  room's 3–7 images (controls stopPropagation).
+- Amenities restructured into **categorised checklists** (Bathroom · Media & Tech ·
+  Room Amenities · Food & Drink · General Services) in the Add Room form
+  (`AMENITY_CATEGORIES` / `AMENITY_MAP`).
+- Cards show a "Show all facilities and services" link opening `FacilitiesModal`,
+  which lists the room's selected features grouped by category.
+- Strict 3–7 image rule preserved. Verified 100% by testing agent (iteration_4).
