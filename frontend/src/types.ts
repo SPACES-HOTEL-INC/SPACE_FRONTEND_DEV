@@ -101,6 +101,7 @@ export interface Booking {
   nights: number
   amount: number
   status: BookingStatus
+  specialRequest: string
 }
 
 // ── Payouts ────────────────────────────────────────────────────────────────
@@ -119,4 +120,19 @@ export interface PayoutFinance {
   platformFee: number
   pendingClearance: number
   withdrawnFunds: number
+}
+
+// ── Bookings visual timeline ─────────────────────────────────────────────────
+export interface TimelineBlock {
+  id: string
+  label: string
+  start: number // 1-based day column (Mon = 1)
+  span: number // number of days the booking spans
+  tone: 'primary' | 'secondary' | 'tertiary'
+}
+
+export interface TimelineRow {
+  id: string
+  room: string
+  blocks: TimelineBlock[]
 }

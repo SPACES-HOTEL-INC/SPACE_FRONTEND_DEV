@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Wallet,
   TrendingUp,
@@ -9,16 +9,20 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
+  ShieldAlert,
+  BadgeCheck,
+  Info,
 } from 'lucide-react'
-import { cn, money } from '../../lib/ui'
-import { PAYOUT_FINANCE, BANK_OPTIONS, PAYOUT_HISTORY } from '../../data/mockData'
+import { cn } from '../../lib/ui'
+import { PAYOUT_FINANCE, BANK_OPTIONS, PAYOUT_HISTORY, NGN_RATE } from '../../data/mockData'
 import type { PayoutStatus } from '../../types'
 
 interface PayoutsProps {
   onNotify: (title: string, message: string) => void
 }
 
-const MIN_WITHDRAWAL = 50
+type Currency = 'USD' | 'NGN'
+const MIN_WITHDRAWAL_USD = 50
 
 const PAYOUT_STATUS_STYLES: Record<PayoutStatus, string> = {
   Processing: 'bg-amber-50 text-amber-700 ring-amber-600/20',
@@ -28,42 +32,116 @@ const PAYOUT_STATUS_STYLES: Record<PayoutStatus, string> = {
 const PAYOUT_STATUS_ICON = { Processing: Loader2, Completed: CheckCircle2, Failed: XCircle }
 
 /**
- * Payouts — the revenue center.
+ * Payouts — the revenue center with dual-currency analytics + KYC gating.
  *
- * Derived money:
- *   Available Balance = TotalIncome − (PlatformFee + PendingClearance + Withdrawn)
- * The "Request Withdrawal" button is disabled whenever Available < $50.
- *
- * State flow: bank settings are local controlled inputs; "Save Payout Details"
- * and "Request Withdrawal" both surface a toast via onNotify. The historic
- * ledger is static mock data.
+ * State flow:
+ *  • `currency` ('USD' | 'NGN') → toggled by the top-right switch; `fmt()` renders
+ *    every figure in the active currency (NGN = USD * NGN_RATE).
+ *  • Bank form: `bank`, `accountNumber`, plus derived `verifying`/`verified`. When
+ *    the account number hits EXACTLY 10 digits we show a "Verifying NUBAN…" loader
+ *    then a read-only verified account name.
+ *  • `bankSaved` → set true on "Save Payout Details". This hides the KYC banner AND
+ *    unlocks the "Request Withdrawal" button (the primary payout gate).
  */
 export default function Payouts({ onNotify }: PayoutsProps) {
   const { totalIncome, platformFee, pendingClearance, withdrawnFunds } = PAYOUT_FINANCE
-  const available = totalIncome - (platformFee + pendingClearance + withdrawnFunds)
-  const canWithdraw = available >= MIN_WITHDRAWAL
+  const availableUsd = totalIncome - (platformFee + pendingClearance + withdrawnFunds)
 
+  const [currency, setCurrency] = useState<Currency>('USD')
   const [bank, setBank] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [accountName, setAccountName] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verified, setVerified] = useState(false)
+  const [bankSaved, setBankSaved] = useState(false)
 
-  const widgets = [
-    { id: 'total', label: 'Total Earnings', value: totalIncome, icon: TrendingUp, tone: 'default' as const, sub: 'Gross income to date' },
-    { id: 'available', label: 'Available Balance', value: available, icon: Wallet, tone: 'success' as const, sub: 'Ready to withdraw' },
-    { id: 'pending', label: 'Pending Clearance', value: pendingClearance, icon: Clock, tone: 'default' as const, sub: 'Clearing in 1–3 days' },
-  ]
+  // NUBAN auto-verification once the account number reaches exactly 10 digits.
+  useEffect(() => {
+    if (accountNumber.length === 10) {
+      setVerifying(true)
+      setVerified(false)
+      const t = setTimeout(() => {
+        setVerifying(false)
+        setVerified(true)
+        setAccountName('Spaces Partner Ltd')
+      }, 1300)
+      return () => clearTimeout(t)
+    }
+    setVerifying(false)
+    setVerified(false)
+    setAccountName('')
+  }, [accountNumber])
 
-  const handleSaveBank = () => onNotify('Payout details saved', 'Your bank information has been updated')
+  // Format a base-USD figure into the active currency.
+  const fmt = (usd: number) =>
+    currency === 'NGN'
+      ? '₦' + Math.round(usd * NGN_RATE).toLocaleString('en-US')
+      : '$' + usd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+
+  const canSaveBank = bank !== '' && verified
+  const canWithdraw = bankSaved && availableUsd >= MIN_WITHDRAWAL_USD
+
+  const handleSaveBank = () => {
+    if (!canSaveBank) return
+    setBankSaved(true)
+    onNotify('Payout details saved', 'Bank verified — withdrawals are now unlocked')
+  }
   const handleWithdraw = () => {
     if (!canWithdraw) return
-    onNotify('Withdrawal requested', `${money(available)} is being processed to your bank`)
+    onNotify('Withdrawal requested', `${fmt(availableUsd)} is being processed to your bank`)
   }
+
+  const widgets = [
+    { id: 'total', label: 'Total Earnings', usd: totalIncome, icon: TrendingUp, tone: 'default' as const },
+    { id: 'available', label: 'Available Balance', usd: availableUsd, icon: Wallet, tone: 'success' as const },
+    { id: 'pending', label: 'Pending Clearance', usd: pendingClearance, icon: Clock, tone: 'default' as const },
+  ]
 
   return (
     <section data-testid="payouts-panel">
-      <div className="mb-6">
-        <h2 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">Payouts</h2>
-        <p className="mt-1 text-sm text-slate-500">Track earnings, manage bank details and withdraw funds</p>
+      {/* KYC / bank verification warning banner */}
+      {!bankSaved && (
+        <div
+          className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 sm:px-5"
+          data-testid="kyc-warning-banner"
+        >
+          <span className="mt-0.5 grid h-8 w-8 flex-none place-items-center rounded-lg bg-amber-100 text-amber-600">
+            <ShieldAlert className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-amber-900">Withdrawals are locked</p>
+            <p className="text-sm text-amber-800">
+              Please complete your bank details and submit your Corporate Tax ID to activate payouts.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Header + currency toggle */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">Payouts</h2>
+          <p className="mt-1 text-sm text-slate-500">Dual-currency earnings, bank details and withdrawals</p>
+        </div>
+
+        <div className="inline-flex items-center rounded-full border border-line bg-white p-1" data-testid="payout-currency-toggle">
+          {(['USD', 'NGN'] as Currency[]).map((c) => {
+            const active = currency === c
+            return (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={cn(
+                  'rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200',
+                  active ? 'bg-brand-600 text-white shadow-[0_8px_18px_-10px_rgba(15,118,110,0.9)]' : 'text-slate-600 hover:text-ink',
+                )}
+                data-testid={`payout-currency-${c.toLowerCase()}`}
+              >
+                View in {c} ({c === 'USD' ? '$' : '₦'})
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Financial widgets */}
@@ -74,10 +152,7 @@ export default function Payouts({ onNotify }: PayoutsProps) {
           return (
             <div
               key={w.id}
-              className={cn(
-                'rounded-2xl border p-5 shadow-card sm:p-6',
-                success ? 'border-emerald-200 bg-emerald-50/60' : 'border-line bg-white',
-              )}
+              className={cn('rounded-2xl border p-5 shadow-card sm:p-6', success ? 'border-emerald-200 bg-emerald-50/60' : 'border-line bg-white')}
               data-testid={`payout-widget-${w.id}`}
             >
               <div className="flex items-center justify-between">
@@ -87,9 +162,18 @@ export default function Payouts({ onNotify }: PayoutsProps) {
                 </span>
               </div>
               <p className="mt-4 text-3xl font-extrabold tracking-tight text-ink" data-testid={`payout-value-${w.id}`}>
-                {money(w.value)}
+                {fmt(w.usd)}
               </p>
-              <p className="mt-1 text-xs text-slate-500">{w.sub}</p>
+              {w.id === 'total' ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500" data-testid="platform-fee-caption">
+                  <Info className="mt-px h-3.5 w-3.5 flex-none text-slate-400" />
+                  Platform fee calculated at a flat 10% rate per completed booking.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">
+                  {w.id === 'available' ? 'Ready to withdraw' : 'Clearing in 1–3 days'}
+                </p>
+              )}
             </div>
           )
         })}
@@ -104,7 +188,7 @@ export default function Payouts({ onNotify }: PayoutsProps) {
             </span>
             <div>
               <h3 className="text-base font-extrabold tracking-tight text-ink">Bank Settings</h3>
-              <p className="text-xs text-slate-500">Where your payouts are deposited</p>
+              <p className="text-xs text-slate-500">Nigerian bank account for your payouts</p>
             </div>
           </div>
 
@@ -141,12 +225,13 @@ export default function Payouts({ onNotify }: PayoutsProps) {
                 </label>
                 <input
                   id="account-number"
-                  type="number"
+                  type="text"
                   inputMode="numeric"
+                  maxLength={10}
                   value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="0000 0000 0000"
-                  className="w-full rounded-xl border border-line bg-white px-4 py-3 text-[15px] text-ink placeholder:text-slate-400 focus-ring"
+                  onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit NUBAN"
+                  className="w-full rounded-xl border border-line bg-white px-4 py-3 text-[15px] tracking-wide text-ink placeholder:text-slate-400 focus-ring"
                   data-testid="account-number-input"
                 />
               </div>
@@ -156,18 +241,35 @@ export default function Payouts({ onNotify }: PayoutsProps) {
                 </label>
                 <input
                   id="account-name"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Account holder name"
-                  className="w-full rounded-xl border border-line bg-white px-4 py-3 text-[15px] text-ink placeholder:text-slate-400 focus-ring"
+                  value={verified ? accountName : ''}
+                  readOnly
+                  placeholder="Auto-filled after verification"
+                  className="w-full rounded-xl border border-line bg-slate-50 px-4 py-3 text-[15px] text-slate-500 placeholder:text-slate-400"
                   data-testid="account-name-input"
                 />
               </div>
             </div>
 
+            {/* NUBAN verification states */}
+            {verifying && (
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-600" data-testid="nuban-verifying">
+                <Loader2 className="h-4 w-4 animate-spin" /> Verifying NUBAN…
+              </div>
+            )}
+            {verified && (
+              <div
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-50 px-3.5 py-2.5 text-sm font-semibold text-brand-700 ring-1 ring-brand-600/20"
+                data-testid="nuban-verified-name"
+              >
+                <BadgeCheck className="h-[18px] w-[18px]" />
+                Account Name: Spaces Partner Ltd <span className="text-brand-600">(Verified)</span>
+              </div>
+            )}
+
             <button
               onClick={handleSaveBank}
-              className="rounded-xl border border-line bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+              disabled={!canSaveBank}
+              className="rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
               data-testid="save-payout-details-button"
             >
               Save Payout Details
@@ -179,9 +281,9 @@ export default function Payouts({ onNotify }: PayoutsProps) {
         <div className="flex flex-col rounded-2xl border border-line bg-ink p-5 text-white shadow-card sm:p-6 lg:col-span-2">
           <p className="text-sm font-medium text-slate-300">Available to withdraw</p>
           <p className="mt-2 text-4xl font-extrabold tracking-tight" data-testid="withdrawal-available">
-            {money(available)}
+            {fmt(availableUsd)}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Minimum withdrawal is {money(MIN_WITHDRAWAL)}</p>
+          <p className="mt-1 text-xs text-slate-400">Minimum withdrawal is {fmt(MIN_WITHDRAWAL_USD)}</p>
 
           <div className="mt-auto pt-6">
             <button
@@ -192,9 +294,9 @@ export default function Payouts({ onNotify }: PayoutsProps) {
             >
               <ArrowUpRight className="h-5 w-5" /> Request Withdrawal
             </button>
-            {!canWithdraw && (
-              <p className="mt-2 text-center text-xs text-amber-300">
-                Balance below {money(MIN_WITHDRAWAL)} — withdrawal unavailable
+            {!bankSaved && (
+              <p className="mt-2 text-center text-xs text-amber-300" data-testid="withdrawal-locked-note">
+                Complete &amp; save your bank details to unlock withdrawals.
               </p>
             )}
           </div>
@@ -225,7 +327,7 @@ export default function Payouts({ onNotify }: PayoutsProps) {
                 data-testid={`payout-history-row-${p.id}`}
               >
                 <div className="text-sm font-medium text-slate-700">{p.date}</div>
-                <div className="text-sm font-bold text-ink">{money(p.amount)}</div>
+                <div className="text-sm font-bold text-ink">{fmt(p.amount)}</div>
                 <div className="font-mono text-xs text-slate-500 sm:text-sm">{p.reference}</div>
                 <div className="col-span-2 sm:col-span-1 sm:text-right">
                   <span

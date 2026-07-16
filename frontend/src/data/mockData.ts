@@ -41,6 +41,7 @@ import type {
   Booking,
   PayoutRecord,
   PayoutFinance,
+  TimelineRow,
 } from '../types'
 
 // Static mock data so the UI compiles and runs fully on the front-end.
@@ -234,16 +235,45 @@ export const ROOM_TYPES: RoomType[] = [
 export const BOOKING_STATUSES: Booking['status'][] = ['Pending', 'Confirmed', 'Checked-In', 'Completed', 'Cancelled']
 
 export const BOOKINGS: Booking[] = [
-  { id: 'bk-1001', guest: 'Amelia Hartwell', initials: 'AH', roomType: 'Executive King Suite', checkIn: 'Jun 16, 2026', checkOut: 'Jun 19, 2026', nights: 3, amount: 1260, status: 'Confirmed' },
-  { id: 'bk-1002', guest: 'Julian Okafor', initials: 'JO', roomType: 'Deluxe Twin Room', checkIn: 'Jun 16, 2026', checkOut: 'Jun 17, 2026', nights: 1, amount: 260, status: 'Checked-In' },
-  { id: 'bk-1003', guest: 'Priya Nair', initials: 'PN', roomType: 'Panorama Corner Suite', checkIn: 'Jun 18, 2026', checkOut: 'Jun 23, 2026', nights: 5, amount: 3050, status: 'Pending' },
-  { id: 'bk-1004', guest: 'Marco Bianchi', initials: 'MB', roomType: 'Classic Queen Room', checkIn: 'Jun 12, 2026', checkOut: 'Jun 14, 2026', nights: 2, amount: 380, status: 'Completed' },
-  { id: 'bk-1005', guest: 'Sofia Andersson', initials: 'SA', roomType: 'Garden Villa', checkIn: 'Jun 20, 2026', checkOut: 'Jun 24, 2026', nights: 4, amount: 3920, status: 'Confirmed' },
-  { id: 'bk-1006', guest: 'David Kim', initials: 'DK', roomType: 'Deluxe Twin Room', checkIn: 'Jun 11, 2026', checkOut: 'Jun 13, 2026', nights: 2, amount: 520, status: 'Cancelled' },
-  { id: 'bk-1007', guest: 'Elena Rossi', initials: 'ER', roomType: 'Executive King Suite', checkIn: 'Jun 17, 2026', checkOut: 'Jun 20, 2026', nights: 3, amount: 1260, status: 'Checked-In' },
-  { id: 'bk-1008', guest: 'Thomas Wright', initials: 'TW', roomType: 'Panorama Corner Suite', checkIn: 'Jun 22, 2026', checkOut: 'Jun 25, 2026', nights: 3, amount: 1830, status: 'Confirmed' },
-  { id: 'bk-1009', guest: 'Aisha Bello', initials: 'AB', roomType: 'Classic Queen Room', checkIn: 'Jun 09, 2026', checkOut: 'Jun 12, 2026', nights: 3, amount: 570, status: 'Completed' },
-  { id: 'bk-1010', guest: 'Liam Murphy', initials: 'LM', roomType: 'Garden Villa', checkIn: 'Jun 25, 2026', checkOut: 'Jun 30, 2026', nights: 5, amount: 4900, status: 'Pending' },
+  { id: 'bk-1001', guest: 'Amelia Hartwell', initials: 'AH', roomType: 'Executive King Suite', checkIn: 'Jun 16, 2026', checkOut: 'Jun 19, 2026', nights: 3, amount: 1260, status: 'Confirmed', specialRequest: 'Requested a late check-in at 11:00 PM and a baby cot.' },
+  { id: 'bk-1002', guest: 'Julian Okafor', initials: 'JO', roomType: 'Deluxe Twin Room', checkIn: 'Jun 16, 2026', checkOut: 'Jun 17, 2026', nights: 1, amount: 260, status: 'Checked-In', specialRequest: 'Non-smoking room on a high floor, please.' },
+  { id: 'bk-1003', guest: 'Priya Nair', initials: 'PN', roomType: 'Panorama Corner Suite', checkIn: 'Jun 18, 2026', checkOut: 'Jun 23, 2026', nights: 5, amount: 3050, status: 'Pending', specialRequest: 'Early check-in requested — celebrating an anniversary.' },
+  { id: 'bk-1004', guest: 'Marco Bianchi', initials: 'MB', roomType: 'Classic Queen Room', checkIn: 'Jun 12, 2026', checkOut: 'Jun 14, 2026', nights: 2, amount: 380, status: 'Completed', specialRequest: 'Extra pillows and a quiet room away from the elevator.' },
+  { id: 'bk-1005', guest: 'Sofia Andersson', initials: 'SA', roomType: 'Garden Villa', checkIn: 'Jun 20, 2026', checkOut: 'Jun 24, 2026', nights: 4, amount: 3920, status: 'Confirmed', specialRequest: 'Airport pickup at 3:00 PM and a vegetarian breakfast.' },
+  { id: 'bk-1006', guest: 'David Kim', initials: 'DK', roomType: 'Deluxe Twin Room', checkIn: 'Jun 11, 2026', checkOut: 'Jun 13, 2026', nights: 2, amount: 520, status: 'Cancelled', specialRequest: 'No special requests.' },
+  { id: 'bk-1007', guest: 'Elena Rossi', initials: 'ER', roomType: 'Executive King Suite', checkIn: 'Jun 17, 2026', checkOut: 'Jun 20, 2026', nights: 3, amount: 1260, status: 'Checked-In', specialRequest: 'Connecting rooms for family; late checkout if possible.' },
+  { id: 'bk-1008', guest: 'Thomas Wright', initials: 'TW', roomType: 'Panorama Corner Suite', checkIn: 'Jun 22, 2026', checkOut: 'Jun 25, 2026', nights: 3, amount: 1830, status: 'Confirmed', specialRequest: 'Allergic to feathers — hypoallergenic bedding required.' },
+  { id: 'bk-1009', guest: 'Aisha Bello', initials: 'AB', roomType: 'Classic Queen Room', checkIn: 'Jun 09, 2026', checkOut: 'Jun 12, 2026', nights: 3, amount: 570, status: 'Completed', specialRequest: 'Requested a room with a bathtub and city view.' },
+  { id: 'bk-1010', guest: 'Liam Murphy', initials: 'LM', roomType: 'Garden Villa', checkIn: 'Jun 25, 2026', checkOut: 'Jun 30, 2026', nights: 5, amount: 4900, status: 'Pending', specialRequest: 'Twin beds instead of a king; extra towels.' },
+]
+
+// Days + booked-duration blocks for the Bookings visual timeline.
+export const TIMELINE_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+export const BOOKING_TIMELINE: TimelineRow[] = [
+  {
+    id: 'tl-101',
+    room: 'Deluxe Suite · Room 101',
+    blocks: [
+      { id: 'blk-101a', label: 'A. Hartwell', start: 1, span: 3, tone: 'primary' },
+      { id: 'blk-101b', label: 'Okafor', start: 6, span: 2, tone: 'secondary' },
+    ],
+  },
+  {
+    id: 'tl-402',
+    room: 'Penthouse · Room 402',
+    blocks: [{ id: 'blk-402a', label: 'S. Andersson', start: 5, span: 3, tone: 'primary' }],
+  },
+  {
+    id: 'tl-214',
+    room: 'Executive King · Room 214',
+    blocks: [{ id: 'blk-214a', label: 'E. Rossi', start: 2, span: 3, tone: 'tertiary' }],
+  },
+  {
+    id: 'tl-05',
+    room: 'Garden Villa · 05',
+    blocks: [{ id: 'blk-05a', label: 'Murphy', start: 6, span: 2, tone: 'secondary' }],
+  },
 ]
 
 // ── Payouts ────────────────────────────────────────────────────────────────
@@ -255,7 +285,20 @@ export const PAYOUT_FINANCE: PayoutFinance = {
   withdrawnFunds: 72000,
 }
 
-export const BANK_OPTIONS = ['Chase Bank', 'Bank of America', 'Wells Fargo', 'Citibank', 'HSBC', 'Barclays']
+export const BANK_OPTIONS = [
+  'Access Bank',
+  'Guaranty Trust Bank (GTBank)',
+  'Zenith Bank',
+  'United Bank for Africa (UBA)',
+  'First Bank of Nigeria',
+  'Moniepoint MFB',
+  'OPay',
+  'Kuda Bank',
+]
+
+// USD -> NGN conversion rate used across the dual-currency payouts view.
+// (base available $41,996.25 * 1500 = ₦62,994,375)
+export const NGN_RATE = 1500
 
 export const PAYOUT_HISTORY: PayoutRecord[] = [
   { id: 'po-1', date: 'Jun 02, 2026', amount: 9300, reference: 'PZ-1B8C55', status: 'Processing' },
