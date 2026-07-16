@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { X, UploadCloud, Trash2, Check, Plus } from 'lucide-react'
-import { cn } from '../../lib/ui'
-import { AMENITIES, CURRENCIES, CAPACITY_OPTIONS, ROOM_IMAGE_POOL } from '../../data/mockData'
+import { X, UploadCloud, Check, Plus } from 'lucide-react'
+import { cn, inputClass, selectClass, labelClass } from '../../lib/ui'
+import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS, ROOM_IMAGE_POOL } from '../../data/mockData'
 import type { RoomType } from '../../types'
-import { inputClass, selectClass, labelClass } from '../../lib/ui'
 
 interface RoomFormPanelProps {
   open: boolean
@@ -21,9 +20,10 @@ const MAX_IMAGES = 7
  *  • Each field has its own controlled state; `images` is a STRING ARRAY of
  *    "mock uploaded" URLs. Clicking the dashed dropzone appends the next image
  *    from ROOM_IMAGE_POOL (capped at MAX_IMAGES); the X on a thumbnail removes it.
+ *  • `amenities` stores the selected amenity item ids across all categories.
  *  • STRICT publish rule: `canPublish` is only true when
  *    MIN_IMAGES <= images.length <= MAX_IMAGES, which gates the Save button.
- *  • On save the assembled RoomType is bubbled up via onSave, then the form
+ *  • On save the assembled RoomType is bubbled up via onSave, then the panel
  *    resets (the reset also runs whenever the panel re-opens).
  */
 export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelProps) {
@@ -50,9 +50,8 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
     }
   }, [open])
 
-  const addImage = () => {
+  const addImage = () =>
     setImages((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, ROOM_IMAGE_POOL[prev.length % ROOM_IMAGE_POOL.length]]))
-  }
   const removeImage = (index: number) => setImages((prev) => prev.filter((_, i) => i !== index))
   const toggleAmenity = (id: string) =>
     setAmenities((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]))
@@ -78,13 +77,11 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
 
   return (
     <div className={cn('fixed inset-0 z-50', open ? 'pointer-events-auto' : 'pointer-events-none')} aria-hidden={!open}>
-      {/* Overlay */}
       <div
         className={cn('absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')}
         onClick={onClose}
       />
 
-      {/* Slide-over */}
       <div
         className={cn(
           'absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col bg-white shadow-card-lg transition-transform duration-300',
@@ -215,30 +212,51 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
             </div>
           </div>
 
-          {/* Amenities grid */}
+          {/* Categorised facilities & amenities */}
           <div>
-            <span className={labelClass}>Amenities</span>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {AMENITIES.map(({ id, label, icon: Icon }) => {
-                const active = amenities.includes(id)
+            <span className={labelClass}>Facilities &amp; Amenities</span>
+            <div className="space-y-5">
+              {AMENITY_CATEGORIES.map((cat) => {
+                const CatIcon = cat.icon
                 return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => toggleAmenity(id)}
-                    className={cn(
-                      'flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                      active
-                        ? 'border-brand-600 bg-brand-50 text-brand-700'
-                        : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
-                    )}
-                    data-testid={`amenity-toggle-${id}`}
-                    aria-pressed={active}
-                  >
-                    <Icon className={cn('h-[18px] w-[18px]', active ? 'text-brand-600' : 'text-slate-400')} />
-                    <span className="truncate">{label}</span>
-                    {active && <Check className="ml-auto h-4 w-4 text-brand-600" />}
-                  </button>
+                  <div key={cat.id} data-testid={`amenity-category-${cat.id}`}>
+                    <div className="mb-2.5 flex items-center gap-2">
+                      <CatIcon className="h-4 w-4 text-brand-600" />
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{cat.label}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {cat.items.map((item) => {
+                        const active = amenities.includes(item.id)
+                        const ItemIcon = item.icon
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => toggleAmenity(item.id)}
+                            aria-pressed={active}
+                            className={cn(
+                              'flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                              active
+                                ? 'border-brand-600 bg-brand-50 text-brand-700'
+                                : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                            )}
+                            data-testid={`amenity-toggle-${item.id}`}
+                          >
+                            <span
+                              className={cn(
+                                'grid h-5 w-5 flex-none place-items-center rounded-md border transition-colors',
+                                active ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white',
+                              )}
+                            >
+                              {active && <Check className="h-3.5 w-3.5" />}
+                            </span>
+                            <ItemIcon className={cn('h-4 w-4 flex-none', active ? 'text-brand-600' : 'text-slate-400')} />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -290,10 +308,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
 
             {/* Dynamic helper text */}
             <p
-              className={cn(
-                'mt-2.5 text-xs font-medium',
-                canPublish ? 'text-emerald-600' : 'text-amber-600',
-              )}
+              className={cn('mt-2.5 text-xs font-medium', canPublish ? 'text-emerald-600' : 'text-amber-600')}
               data-testid="image-helper-text"
             >
               {canPublish

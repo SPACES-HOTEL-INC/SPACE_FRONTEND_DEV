@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import {
   Percent,
   BedDouble,
@@ -5,11 +6,26 @@ import {
   LayoutDashboard,
   CalendarCheck,
   Wallet,
-  Wifi,
-  Snowflake,
-  Tv,
-  Wine,
+  // amenity + category icons
   Bath,
+  ShowerHead,
+  Wind,
+  Droplets,
+  Scroll,
+  Tv,
+  MonitorPlay,
+  Cast,
+  Plug,
+  Snowflake,
+  Lamp,
+  Wine,
+  CookingPot,
+  Coffee,
+  BusFront,
+  Waves,
+  Dumbbell,
+  Wifi,
+  UtensilsCrossed,
   ConciergeBell,
 } from 'lucide-react'
 import type {
@@ -17,7 +33,7 @@ import type {
   CheckIn,
   NavItem,
   Session,
-  Amenity,
+  AmenityCategory,
   RoomType,
   Booking,
   PayoutRecord,
@@ -58,23 +74,80 @@ export const PROPERTY_TYPES = ['Hotel', 'Resort', 'Boutique Hotel', 'Serviced Ap
 export const STAR_RATINGS = ['5 Star', '4 Star', '3 Star', '2 Star', '1 Star']
 
 // ── Manage Rooms ───────────────────────────────────────────────────────────
-export const AMENITIES: Amenity[] = [
-  { id: 'wifi', label: 'WiFi', icon: Wifi },
-  { id: 'ac', label: 'Air Conditioning', icon: Snowflake },
-  { id: 'tv', label: 'Smart TV', icon: Tv },
-  { id: 'minibar', label: 'Mini-bar', icon: Wine },
-  { id: 'bathtub', label: 'Bathtub', icon: Bath },
-  { id: 'service', label: 'Room Service', icon: ConciergeBell },
-]
-
+// Currency is strictly limited to USD ($) and NGN (₦).
 export const CURRENCIES = [
   { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'INR', symbol: '₹' },
+  { code: 'NGN', symbol: '₦' },
 ]
 
 export const CAPACITY_OPTIONS = ['1', '2', '3', '4+']
+
+// Amenities organised into logical, categorised checklists.
+export const AMENITY_CATEGORIES: AmenityCategory[] = [
+  {
+    id: 'bathroom',
+    label: 'Bathroom',
+    icon: Bath,
+    items: [
+      { id: 'toilet-paper', label: 'Toilet paper', icon: Scroll },
+      { id: 'towels', label: 'Towels', icon: Bath },
+      { id: 'hairdryer', label: 'Hairdryer', icon: Wind },
+      { id: 'private-bathroom', label: 'Private bathroom', icon: ShowerHead },
+      { id: 'toiletries', label: 'Toiletries', icon: Droplets },
+    ],
+  },
+  {
+    id: 'media-tech',
+    label: 'Media & Tech',
+    icon: MonitorPlay,
+    items: [
+      { id: 'flat-tv', label: 'Flat-screen TV', icon: Tv },
+      { id: 'streaming', label: 'Streaming service (Netflix)', icon: MonitorPlay },
+      { id: 'cable', label: 'Cable channels', icon: Cast },
+    ],
+  },
+  {
+    id: 'room-amenities',
+    label: 'Room Amenities',
+    icon: BedDouble,
+    items: [
+      { id: 'socket-bed', label: 'Socket near bed', icon: Plug },
+      { id: 'air-conditioning', label: 'Air conditioning', icon: Snowflake },
+      { id: 'desk', label: 'Desk', icon: Lamp },
+    ],
+  },
+  {
+    id: 'food-drink',
+    label: 'Food & Drink',
+    icon: UtensilsCrossed,
+    items: [
+      { id: 'minibar', label: 'Minibar', icon: Wine },
+      { id: 'kettle', label: 'Electric kettle', icon: CookingPot },
+      { id: 'coffee-maker', label: 'Tea/Coffee maker', icon: Coffee },
+    ],
+  },
+  {
+    id: 'general-services',
+    label: 'General Services',
+    icon: ConciergeBell,
+    items: [
+      { id: 'airport-shuttle', label: 'Airport shuttle', icon: BusFront },
+      { id: 'pool', label: 'Outdoor swimming pool', icon: Waves },
+      { id: 'fitness', label: 'Fitness centre', icon: Dumbbell },
+      { id: 'free-wifi', label: 'Free WiFi', icon: Wifi },
+    ],
+  },
+]
+
+// Flat lookup: amenity id -> { label, icon, categoryId, categoryLabel }.
+export const AMENITY_MAP: Record<
+  string,
+  { label: string; icon: LucideIcon; categoryId: string; categoryLabel: string }
+> = Object.fromEntries(
+  AMENITY_CATEGORIES.flatMap((c) =>
+    c.items.map((it) => [it.id, { label: it.label, icon: it.icon, categoryId: c.id, categoryLabel: c.label }]),
+  ),
+)
 
 // Pool of "mock uploaded" images used by the room image matrix + card covers.
 export const ROOM_IMAGE_POOL = [
@@ -97,7 +170,7 @@ export const ROOM_TYPES: RoomType[] = [
     currency: '$',
     inventory: 12,
     capacity: '2',
-    amenities: ['wifi', 'ac', 'tv', 'minibar', 'service'],
+    amenities: ['free-wifi', 'air-conditioning', 'flat-tv', 'minibar', 'coffee-maker', 'private-bathroom', 'toiletries'],
     images: [ROOM_IMAGE_POOL[2], ROOM_IMAGE_POOL[0], ROOM_IMAGE_POOL[4]],
     status: 'active',
   },
@@ -109,8 +182,8 @@ export const ROOM_TYPES: RoomType[] = [
     currency: '$',
     inventory: 24,
     capacity: '3',
-    amenities: ['wifi', 'ac', 'tv'],
-    images: [ROOM_IMAGE_POOL[3], ROOM_IMAGE_POOL[1]],
+    amenities: ['free-wifi', 'air-conditioning', 'flat-tv', 'towels', 'hairdryer', 'desk'],
+    images: [ROOM_IMAGE_POOL[3], ROOM_IMAGE_POOL[1], ROOM_IMAGE_POOL[5]],
     status: 'active',
   },
   {
@@ -121,8 +194,8 @@ export const ROOM_TYPES: RoomType[] = [
     currency: '$',
     inventory: 6,
     capacity: '2',
-    amenities: ['wifi', 'ac', 'tv', 'minibar', 'bathtub', 'service'],
-    images: [ROOM_IMAGE_POOL[0], ROOM_IMAGE_POOL[5], ROOM_IMAGE_POOL[7]],
+    amenities: ['free-wifi', 'air-conditioning', 'flat-tv', 'streaming', 'minibar', 'private-bathroom', 'pool', 'toiletries'],
+    images: [ROOM_IMAGE_POOL[0], ROOM_IMAGE_POOL[5], ROOM_IMAGE_POOL[7], ROOM_IMAGE_POOL[2]],
     status: 'active',
   },
   {
@@ -133,8 +206,8 @@ export const ROOM_TYPES: RoomType[] = [
     currency: '$',
     inventory: 4,
     capacity: '4+',
-    amenities: ['wifi', 'ac', 'tv', 'minibar', 'bathtub', 'service'],
-    images: [ROOM_IMAGE_POOL[1], ROOM_IMAGE_POOL[6]],
+    amenities: ['free-wifi', 'air-conditioning', 'flat-tv', 'minibar', 'kettle', 'pool', 'fitness', 'airport-shuttle'],
+    images: [ROOM_IMAGE_POOL[1], ROOM_IMAGE_POOL[6], ROOM_IMAGE_POOL[3]],
     status: 'active',
   },
   {
@@ -145,20 +218,14 @@ export const ROOM_TYPES: RoomType[] = [
     currency: '$',
     inventory: 30,
     capacity: '2',
-    amenities: ['wifi', 'ac', 'tv'],
-    images: [ROOM_IMAGE_POOL[4], ROOM_IMAGE_POOL[7]],
+    amenities: ['free-wifi', 'air-conditioning', 'flat-tv', 'towels', 'socket-bed'],
+    images: [ROOM_IMAGE_POOL[4], ROOM_IMAGE_POOL[7], ROOM_IMAGE_POOL[0]],
     status: 'active',
   },
 ]
 
 // ── Bookings ───────────────────────────────────────────────────────────────
-export const BOOKING_STATUSES: Booking['status'][] = [
-  'Pending',
-  'Confirmed',
-  'Checked-In',
-  'Completed',
-  'Cancelled',
-]
+export const BOOKING_STATUSES: Booking['status'][] = ['Pending', 'Confirmed', 'Checked-In', 'Completed', 'Cancelled']
 
 export const BOOKINGS: Booking[] = [
   { id: 'bk-1001', guest: 'Amelia Hartwell', initials: 'AH', roomType: 'Executive King Suite', checkIn: 'Jun 16, 2026', checkOut: 'Jun 19, 2026', nights: 3, amount: 1260, status: 'Confirmed' },
@@ -182,14 +249,7 @@ export const PAYOUT_FINANCE: PayoutFinance = {
   withdrawnFunds: 72000,
 }
 
-export const BANK_OPTIONS = [
-  'Chase Bank',
-  'Bank of America',
-  'Wells Fargo',
-  'Citibank',
-  'HSBC',
-  'Barclays',
-]
+export const BANK_OPTIONS = ['Chase Bank', 'Bank of America', 'Wells Fargo', 'Citibank', 'HSBC', 'Barclays']
 
 export const PAYOUT_HISTORY: PayoutRecord[] = [
   { id: 'po-1', date: 'Jun 02, 2026', amount: 9300, reference: 'PZ-1B8C55', status: 'Processing' },

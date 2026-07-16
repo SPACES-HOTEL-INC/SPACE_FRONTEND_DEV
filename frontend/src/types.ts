@@ -60,10 +60,19 @@ export interface NavItem {
 }
 
 // ── Manage Rooms ───────────────────────────────────────────────────────────
-export interface Amenity {
+// A single facility/amenity option.
+export interface AmenityItem {
   id: string
   label: string
   icon: LucideIcon
+}
+
+// A logical grouping of amenity options (Bathroom, Media & Tech, …).
+export interface AmenityCategory {
+  id: string
+  label: string
+  icon: LucideIcon
+  items: AmenityItem[]
 }
 
 export interface RoomType {
@@ -71,10 +80,10 @@ export interface RoomType {
   title: string
   description: string
   price: number
-  currency: string // symbol, e.g. "$"
+  currency: string // symbol, e.g. "$" or "₦"
   inventory: number
   capacity: string // '1' | '2' | '3' | '4+'
-  amenities: string[] // amenity ids
+  amenities: string[] // amenity item ids
   images: string[]
   status: 'active' | 'draft'
 }

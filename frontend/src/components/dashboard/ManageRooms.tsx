@@ -1,27 +1,30 @@
 import { useState } from 'react'
-import { Plus, Users, Layers, BedDouble } from 'lucide-react'
-import { cn } from '../../lib/ui'
-import { AMENITIES, ROOM_TYPES } from '../../data/mockData'
+import { Plus, Users, Layers, BedDouble, ChevronRight } from 'lucide-react'
+import { AMENITY_MAP, ROOM_TYPES } from '../../data/mockData'
 import type { RoomType } from '../../types'
 import RoomFormPanel from './RoomFormPanel'
+import RoomImageCarousel from './RoomImageCarousel'
+import FacilitiesModal from './FacilitiesModal'
 
 interface ManageRoomsProps {
   onNotify: (title: string, message: string) => void
 }
 
-// Quick lookup so cards can render amenity icons from their id list.
-const AMENITY_MAP = Object.fromEntries(AMENITIES.map((a) => [a.id, a]))
+const MAX_CARD_ICONS = 5
 
 /**
  * ManageRooms — card grid of room types + the "Add New Room Type" slide-over.
  *
- * State flow: `rooms` is local state seeded from ROOM_TYPES. Opening the panel
- * (`panelOpen`) shows RoomFormPanel; its onSave prepends the new room to the
- * grid and fires a toast via onNotify.
+ * State flow:
+ *  • `rooms`         → local list seeded from ROOM_TYPES; onSave prepends new rooms.
+ *  • `panelOpen`     → toggles the RoomFormPanel slide-over.
+ *  • `facilitiesRoom`→ the room whose full categorised facilities modal is open
+ *                      (null = closed), driven by the card's "Show all …" link.
  */
 export default function ManageRooms({ onNotify }: ManageRoomsProps) {
   const [rooms, setRooms] = useState<RoomType[]>(ROOM_TYPES)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [facilitiesRoom, setFacilitiesRoom] = useState<RoomType | null>(null)
 
   const handleSave = (room: RoomType) => {
     setRooms((prev) => [room, ...prev])
@@ -53,21 +56,19 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
         {rooms.map((room) => (
           <article
             key={room.id}
-            className="group overflow-hidden rounded-2xl border border-line bg-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-lg"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-lg"
             data-testid={`room-card-${room.id}`}
           >
-            {/* Cover */}
-            <div className="relative h-44 overflow-hidden bg-slate-100">
-              <img
-                src={room.images[0]}
-                alt={room.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700 backdrop-blur">
+            {/* Image carousel + overlays */}
+            <div className="relative">
+              <RoomImageCarousel images={room.images} title={room.title} testId={`room-${room.id}`} />
+              <span className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700 backdrop-blur">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active
               </span>
-              <span className="absolute bottom-3 right-3 rounded-lg bg-ink/80 px-2.5 py-1 text-sm font-bold text-white backdrop-blur">
+              <span
+                className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-ink/80 px-2.5 py-1 text-sm font-bold text-white backdrop-blur"
+                data-testid={`room-price-${room.id}`}
+              >
                 {room.currency}
                 {room.price.toLocaleString()}
                 <span className="text-xs font-medium text-slate-300"> /night</span>
@@ -75,7 +76,7 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
             </div>
 
             {/* Body */}
-            <div className="p-5">
+            <div className="flex flex-1 flex-col p-5">
               <h3 className="truncate text-base font-extrabold tracking-tight text-ink">{room.title}</h3>
               <p className="mt-1 line-clamp-2 text-sm text-slate-500">{room.description}</p>
 
@@ -88,22 +89,40 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
                 </span>
               </div>
 
-              {/* Amenity icons */}
-              <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-4">
-                {room.amenities.map((id) => {
-                  const a = AMENITY_MAP[id]
-                  if (!a) return null
-                  const Icon = a.icon
-                  return (
-                    <span
-                      key={id}
-                      title={a.label}
-                      className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500"
-                    >
-                      <Icon className="h-4 w-4" />
+              {/* Facilities summary + link to full list */}
+              <div className="mt-4 border-t border-line pt-4">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {room.amenities.slice(0, MAX_CARD_ICONS).map((id) => {
+                    const a = AMENITY_MAP[id]
+                    if (!a) return null
+                    const Icon = a.icon
+                    return (
+                      <span
+                        key={id}
+                        title={a.label}
+                        className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500"
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                    )
+                  })}
+                  {room.amenities.length > MAX_CARD_ICONS && (
+                    <span className="grid h-8 min-w-8 place-items-center rounded-lg bg-slate-100 px-2 text-xs font-bold text-slate-500">
+                      +{room.amenities.length - MAX_CARD_ICONS}
                     </span>
-                  )
-                })}
+                  )}
+                </div>
+
+                {room.amenities.length > 0 && (
+                  <button
+                    onClick={() => setFacilitiesRoom(room)}
+                    className="group/link mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700"
+                    data-testid={`show-all-facilities-${room.id}`}
+                  >
+                    Show all facilities and services
+                    <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-0.5" />
+                  </button>
+                )}
               </div>
             </div>
           </article>
@@ -119,6 +138,7 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
       </div>
 
       <RoomFormPanel open={panelOpen} onClose={() => setPanelOpen(false)} onSave={handleSave} />
+      <FacilitiesModal room={facilitiesRoom} onClose={() => setFacilitiesRoom(null)} />
     </section>
   )
 }
