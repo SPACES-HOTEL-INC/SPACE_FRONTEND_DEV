@@ -154,7 +154,7 @@ export default function Bookings({ onNotify }: BookingsProps) {
                           {/* click-away layer */}
                           <div className="fixed inset-0 z-20" onClick={() => setOpenRequest(null)} />
                           <div
-                            className="absolute left-0 top-full z-30 mt-2 w-64 animate-fade-in rounded-xl border border-line bg-white p-3.5 shadow-card-lg"
+                            className="fixed inset-x-4 bottom-4 z-30 animate-fade-in rounded-xl border border-line bg-white p-3.5 shadow-card-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:w-64"
                             data-testid={`special-request-popover-${b.id}`}
                           >
                             <p className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Special request</p>

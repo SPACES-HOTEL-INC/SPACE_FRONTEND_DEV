@@ -68,3 +68,18 @@ static dashboard data.
 - Cards show a "Show all facilities and services" link opening `FacilitiesModal`,
   which lists the room's selected features grouped by category.
 - Strict 3–7 image rule preserved. Verified 100% by testing agent (iteration_4).
+
+## Update — 2026-06-14 (Elite operational upgrades)
+- **Payouts → Nigerian banks**: bank dropdown now lists 8 NG institutions (Access,
+  GTBank, Zenith, UBA, First Bank, Moniepoint MFB, OPay, Kuda).
+- **NUBAN verification**: at exactly 10 digits, a teal "Verifying NUBAN…" loader shows,
+  then a read-only "Account Name: Spaces Partner Ltd (Verified)" label auto-fills.
+- **Dual-currency wallet**: top-right USD/NGN toggle re-renders all widgets, withdrawal
+  card and history at a ×1500 rate (USD $41,996.25 ⇄ NGN ₦62,994,375). Flat-10%
+  platform-fee caption under Total Earnings.
+- **KYC gating**: a "Withdrawals are locked" banner shows until bank details are saved
+  (requires a selected bank + verified NUBAN); saving hides the banner and unlocks the
+  Request Withdrawal button.
+- **Bookings**: special-request message badge → popover (bottom-sheet on mobile) per
+  guest; plus a weekly visual timeline matrix (rooms × Mon–Sun) with teal duration blocks.
+- Verified 100% by testing agent (iteration_5); mobile popover overflow fixed post-test.
