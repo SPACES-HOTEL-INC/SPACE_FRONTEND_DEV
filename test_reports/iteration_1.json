@@ -1,0 +1,74 @@
+{
+  "summary": "End-to-end frontend testing of Spaces Hm business console (Vite + React + TS scaffold). Login, signup wizard, dashboard, check-ins, sidebar nav, mobile responsiveness were exercised. All flows work EXCEPT the registration wizard which has a critical bug: clicking 'Next' on Step 2 (transition to Step 3) inadvertently submits the form and routes the user to Dashboard after ~800ms, bypassing Step 3 entirely.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "SignUpWizard (src/components/auth/SignUpWizard.tsx)",
+        "issue": "CRITICAL: Clicking 'Next' on Step 2 triggers form submission with the 800ms setTimeout, routing user to Dashboard and skipping Step 3 (tax ID + document upload) entirely. As a follow-on effect, if the user manages to briefly see Step 3 and then clicks 'Back', the pending 800ms setTimeout still fires and routes them to Dashboard from Step 2. The 3-step wizard therefore cannot be completed in the intended way.",
+        "selector": "[data-testid=wizard-next-button] on Step 2 -> auto-submit",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Registration wizard Step 2 -> Step 3",
+        "issue": "Form onSubmit fires (via browser default click action, NOT via JS) whenever the Next button is replaced by the Submit button at the same conditional-render position. This makes the wizard's Step 3 unreachable/uncommittable in a controlled way and blocks proper testing of Step 2 -> Step 3 state retention.",
+        "affected_selectors": ["[data-testid=wizard-next-button]", "[data-testid=wizard-submit-button]", "form onSubmit"]
+      }
+    ],
+    "design_issues": []
+  },
+  "rca of the issue": "ROOT CAUSE: In SignUpWizard.tsx (~line 309-334), Next and Submit are rendered at the SAME conditional slot: `{step < 3 ? <button type=\"button\" onClick={next} data-testid=\"wizard-next-button\">Next</button> : <button type=\"submit\" data-testid=\"wizard-submit-button\">Submit</button>}`. React reconciliation sees a <button> in the same position both before and after the step-2 -> step-3 render, so it REUSES the same DOM node and just mutates its attributes (type changes from 'button' to 'submit', testid changes, handlers change). Sequence during the click:\n  1) User clicks the Next button (type=button at click time).\n  2) React synthetic onClick handler runs -> next() -> setStep(3) -> synchronous re-render.\n  3) Reconciliation reuses the same DOM node and changes its type attribute to 'submit'.\n  4) The browser now evaluates the DEFAULT action for the original click event. It looks at the CURRENT type of the clicked element -> sees 'submit' -> submits the enclosing <form>.\n  5) The form's onSubmit fires handleSubmit which schedules the 800ms setTimeout -> onAuthenticated -> Dashboard.\n\nReproduction (verified 3x, each producing a fresh MER-xxxx-NEW merchant id in the Dashboard header):\n  - Go to /signup, fill Step 1, click Next -> Step 2 (fine).\n  - On Step 2 fill hotel name etc., click Next.\n  - Step 3 flashes briefly (taxid input visible), then within ~800ms the app routes to Dashboard with the hotelName captured from Step 2. Any subsequent Back click has no way to cancel the already-scheduled onAuthenticated call.\n\nInstrumentation confirming the RCA: attaching a `submit` listener to the <form> and a bubbling click listener showed ONLY a single click event on wizard-next-button (type=button), and ZERO submit events reaching my listener - because React's own delegated onSubmit runs on React root and my listener is attached later; but `window.setTimeout` monkey-patching showed that a setTimeout(fn, 800) IS scheduled immediately after the Step 2 Next click. That setTimeout only exists in handleSubmit, proving handleSubmit ran even though we clicked Next.\n\nMITIGATION / FIX OPTIONS (any one is enough):\n  (a) Give the two branches distinct React keys so the DOM node is NOT reused:\n        {step < 3 ? (<button key=\"wizard-next\" type=\"button\" onClick={next} ...>Next</button>) : (<button key=\"wizard-submit\" type=\"submit\" ...>Submit</button>)}\n  (b) Always render both buttons and toggle visibility/disabled instead of conditional rendering.\n  (c) Preventively call e.preventDefault() inside next() (but this is fragile because we're inside onClick, and by then React has already synced state; safer to fix reconciliation).\n  (d) Use two entirely different parent wrappers so React sees them as different subtrees.\nOption (a) is a 1-line, safest fix.",
+  "test_report_links": [
+    "/app/test_reports/mobile_dashboard.png",
+    "/app/test_reports/mobile_sidebar_open.png",
+    "/app/test_reports/mobile_signup.png"
+  ],
+  "action_items": [
+    "CRITICAL: Fix the wizard-next -> wizard-submit DOM reuse bug in src/components/auth/SignUpWizard.tsx by giving the two conditional buttons distinct React `key` props (e.g. key=\"wizard-next\" and key=\"wizard-submit\"). This will stop the accidental form submission when transitioning from Step 2 to Step 3.",
+    "After the fix, re-verify: full 3-step wizard flow reaches the Dashboard ONLY on wizard-submit-button click; state retention across Back/Next on Step 2 <-> Step 3 works; document upload dropzone actually gets used."
+  ],
+  "critical_code_review_comments": [
+    "SignUpWizard.tsx: conditional rendering of Next/Submit at the same slot without distinct keys is the root cause of the auto-submit. Add `key` props (1 line each).",
+    "SignUpWizard.tsx (handleSubmit): the 800ms setTimeout is scheduled without a ref/AbortController, so it cannot be cancelled if the user navigates away (e.g. by clicking Back) after an accidental submit. Consider storing the timeout id and clearing it in a cleanup effect.",
+    "SignUpWizard.tsx: Next button on Step 2 does not validate required fields (Hotel name, Property Type, Star Rating, Address are all optional in practice). Consider basic required attributes or per-step validation before advancing.",
+    "SignIn.tsx / SignUpWizard.tsx: setTimeout in handleSubmit is not cleared if the component unmounts before it fires -> potential setState-on-unmounted warning after fix.",
+    "MiniHeader.tsx: the `Online` status pill is hidden below sm breakpoint (`hidden ... sm:inline-flex`). If the acceptance criteria requires it to always be visible, adjust; otherwise leave as is."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (no backend by design)",
+    "frontend": "~80% (11 of the 12 test cases pass; only the wizard Step 2 -> Step 3 submission bug fails, which cascades to Step 2 -> 3 state retention and Step 3 submit tests)"
+  },
+  "test_credentials": "Mocked. Email prefilled owner@grandregent.com, any non-empty password (used Secret123!).",
+  "seed_data_creation": "N/A - all data is static in src/data/mockData.ts",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "The single critical issue is the Step 2 -> Step 3 auto-submit in the registration wizard. Once main agent adds distinct React keys to the Next vs Submit buttons in SignUpWizard.tsx (see RCA), please re-run: (1) full 3-step wizard fill, (2) Back from Step 3 to Step 2 and confirm hotel name / property type / star rating / address are still populated, (3) Back from Step 2 to Step 1 (already verified working), (4) final wizard-submit-button click routes to Dashboard with the user-entered hotel name in header-hotel-name. All other flows (login, password validation, password toggle, dashboard KPIs, check-in flip + toast auto-dismiss, sidebar nav highlight, sign out, mobile hamburger + drawer open/close) are already verified passing on both desktop 1920x1080 and mobile 390x844. testids used in the codebase are correct and stable.",
+  "verified_passing": [
+    "Login: email is prefilled with owner@grandregent.com.",
+    "Login: empty password -> native 'required' validation blocks submission (still on login card).",
+    "Login: show/hide password toggle flips input type between password and text.",
+    "Login: valid credentials -> Dashboard shows 'Grand Regent Hotel' and Merchant ID MER-4820-GR.",
+    "Dashboard: header-hotel-name, header-merchant-id, online-status-indicator all rendered.",
+    "Dashboard: KPI row shows Occupancy Rate 87.4%, Active Rooms 142, Daily Revenue $38,920 (green success tone).",
+    "Dashboard: checkins-queue rendered with 5 rows g1..g5 (g4 pre-checked-in per mock data).",
+    "Dashboard: check-in-button-g1 click flips row to checked-in-badge-g1 AND checkin-toast appears; toast auto-dismisses within ~2.8s.",
+    "Dashboard: sidebar-nav highlights active item for overview/rooms/bookings/payouts.",
+    "Dashboard: sign-out-button routes back to Login.",
+    "Signup navigation: go-to-signup-link renders signup-wizard with signup-stepper.",
+    "Wizard stepper: node-1 active with brand ring initially; node-2 active after Next.",
+    "Wizard state retention Step 1 <- Step 2: firstName/lastName/mobile/password preserved after Back.",
+    "Mobile 390x844: brand panel hidden (no visible brand-panel), compact login card, hamburger open-menu-button (36x36), mobile-sidebar drawer opens and slides in, close-sidebar-button closes it.",
+    "Mobile: login and dashboard render without horizontal overflow."
+  ],
+  "verified_failing": [
+    "Wizard Step 2 -> Step 3: auto-submits and routes to Dashboard (~800ms) — Step 3 fields (taxid, file upload) never truly usable.",
+    "Wizard Step 2 <-> Step 3 state retention could NOT be verified because the transition itself submits the form (blocked by the above bug)."
+  ]
+}
