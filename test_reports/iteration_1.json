@@ -1,5 +1,5 @@
 {
-  "summary": "End-to-end frontend testing of Spaces Hm business console (Vite + React + TS scaffold). Login, signup wizard, dashboard, check-ins, sidebar nav, mobile responsiveness were exercised. All flows work EXCEPT the registration wizard which has a critical bug: clicking 'Next' on Step 2 (transition to Step 3) inadvertently submits the form and routes the user to Dashboard after ~800ms, bypassing Step 3 entirely.",
+  "summary": "End-to-end frontend testing of Spaces Hm business account (Vite + React + TS scaffold). Login, signup wizard, dashboard, check-ins, sidebar nav, mobile responsiveness were exercised. All flows work EXCEPT the registration wizard which has a critical bug: clicking 'Next' on Step 2 (transition to Step 3) inadvertently submits the form and routes the user to Dashboard after ~800ms, bypassing Step 3 entirely.",
   "backend_issues": {
     "critical": [],
     "minor": []

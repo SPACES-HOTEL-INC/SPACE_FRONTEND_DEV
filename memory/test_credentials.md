@@ -5,7 +5,7 @@
 ## Sign In (Login screen)
 - **Business Email:** any valid email works. Prefilled default: `owner@grandregent.com`
 - **Password:** any non-empty value works (the field is `required`, so it must not be blank). e.g. `Secret123!`
-- Clicking **"Enter Business Console"** simulates auth and routes to the Dashboard with the demo hotel session.
+- Clicking **"Enter Business Account"** simulates auth and routes to the Dashboard with the demo hotel session.
 
 ## Sign Up (Registration wizard)
 - All fields are optional for the scaffold flow; you can click **Next** / **Submit** through the 3 steps.

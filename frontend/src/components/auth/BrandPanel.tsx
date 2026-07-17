@@ -25,7 +25,7 @@ export default function BrandPanel() {
 
       <div className="relative max-w-md">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-200 backdrop-blur">
-          <ShieldCheck className="h-3.5 w-3.5" /> Business Console
+          <ShieldCheck className="h-3.5 w-3.5" /> Business Account
         </span>
         <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white xl:text-5xl">
           Run your property like a Fortune&nbsp;500.

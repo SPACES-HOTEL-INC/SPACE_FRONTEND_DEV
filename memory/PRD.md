@@ -27,7 +27,7 @@ static dashboard data.
 
 ## Implemented (2026-06-14)
 - Module 1 — Sign In: split-screen premium login (email/password w/ show-hide, remember me,
-  forgot password), "Enter Business Console" -> mock auth -> Dashboard.
+  forgot password), "Enter Business Account" -> mock auth -> Dashboard.
 - Module 2 — 3-step Registration Wizard with status stepper; centralized form state retained
   across Back/Next; file-upload dropzone mock; submit -> Dashboard.
 - Module 3 — Executive Dashboard: mini-header (hotel name, Merchant ID, Online pulse),

@@ -36,7 +36,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
       <header className="mb-8">
         <h2 className="text-3xl font-extrabold tracking-tight text-ink">Welcome back</h2>
         <p className="mt-2 text-[15px] text-slate-500">
-          Sign in to your Spaces Hm business console.
+          Sign in to your Spaces Hm business account.
         </p>
       </header>
 
@@ -114,7 +114,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
             </>
           ) : (
             <>
-              Enter Business Console
+              Login Business Account
               <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </>
           )}
