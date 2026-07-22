@@ -82,7 +82,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
     // Build the request body matching the API spec
     const payload = {
       email: data.email,
-      role: 'consumer', // Change to your preferred default role if needed
+      role: 'hotel', // Change to your preferred default role if needed
       password: data.password,
       full_name: `${data.firstName} ${data.lastName}`.trim(),
       phone_number: data.mobile,
