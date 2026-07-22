@@ -1,34 +1,90 @@
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 import FormField from './FormField'
 import { inputClass } from '../../lib/ui'
 import { DEMO_SESSION } from '../../data/mockData'
 import type { Session } from '../../types'
 
 interface SignInProps {
-  // Bubbles a (mock) authenticated session up to App -> routes to dashboard.
   onAuthenticated: (session: Session) => void
   onNavigateSignup: () => void
 }
 
-/**
- * SignIn — the elegant login card.
- * On submit it simulates a short auth request, then hands a Session up to App.
- */
+// Adjust this URL if your login route uses OAuth2 (/api/v1/auth/token or /api/v1/auth/login)
+const API_LOGIN_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/login'
+
 export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProps) {
-  const [email, setEmail] = useState('owner@grandregent.com')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Simulated authentication — replace with a real API call later.
-    setTimeout(() => {
-      onAuthenticated({ ...DEMO_SESSION, email: email || DEMO_SESSION.email })
-    }, 650)
+    setErrorMessage(null)
+
+    try {
+      // 1. Send authentication request to backend
+      const response = await fetch(API_LOGIN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password,
+        }),
+      })
+
+      // If backend uses OAuth2 Form Data instead of JSON, uncomment this alternative body block:
+      /*
+      const formData = new URLSearchParams()
+      formData.append('username', email.trim())
+      formData.append('password', password)
+
+      const response = await fetch('https://backend-nq9s.onrender.com/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      })
+      */
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.detail || errorData.message || 'Invalid email or password.'
+        )
+      }
+
+      const data = await response.json()
+
+      // 2. Save auth token if returned (e.g., access_token)
+      if (data.access_token) {
+        if (remember) {
+          localStorage.setItem('access_token', data.access_token)
+        } else {
+          sessionStorage.setItem('access_token', data.access_token)
+        }
+      }
+
+      // 3. Build session & route to Dashboard
+      onAuthenticated({
+        ...DEMO_SESSION,
+        email: data.email || email,
+        merchantId: data.id || DEMO_SESSION.merchantId,
+        hotelName: data.full_name ? `${data.full_name}'s Property` : DEMO_SESSION.hotelName,
+      })
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setErrorMessage(err.message || 'Unable to sign in. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -40,6 +96,14 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
         </p>
       </header>
 
+      {/* Error Banner */}
+      {errorMessage && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+          <p>{errorMessage}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
         <FormField label="Business Email" htmlFor="email">
           <div className="relative">
@@ -50,7 +114,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="@yourhotel.com"
+              placeholder="user@example.com"
               className={`${inputClass} pl-11`}
               data-testid="login-email-input"
             />
