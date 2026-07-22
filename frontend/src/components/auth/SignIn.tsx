@@ -50,7 +50,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@yourhotel.com"
+              placeholder="@yourhotel.com"
               className={`${inputClass} pl-11`}
               data-testid="login-email-input"
             />
