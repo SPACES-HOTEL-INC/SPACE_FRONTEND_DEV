@@ -3,6 +3,7 @@ import {
   User,
   Phone,
   Lock,
+  Mail,
   Building2,
   MapPin,
   ChevronDown,
@@ -12,12 +13,28 @@ import {
   FileCheck2,
   ShieldCheck,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import FormField from './FormField'
 import StepperTracker from './StepperTracker'
 import { inputClass, selectClass } from '../../lib/ui'
 import { PROPERTY_TYPES, STAR_RATINGS } from '../../data/mockData'
-import type { RegistrationData, Session } from '../../types'
+import type { Session } from '../../types'
+
+// Extended registration data to include email
+export interface RegistrationData {
+  email: string
+  firstName: string
+  lastName: string
+  mobile: string
+  password: string
+  hotelName: string
+  propertyType: string
+  starRating: string
+  address: string
+  taxId: string
+  documentName: string
+}
 
 interface SignUpWizardProps {
   onAuthenticated: (session: Session) => void
@@ -31,6 +48,7 @@ const STEPS = [
 ]
 
 const INITIAL_DATA: RegistrationData = {
+  email: '',
   firstName: '',
   lastName: '',
   mobile: '',
@@ -43,39 +61,62 @@ const INITIAL_DATA: RegistrationData = {
   documentName: '',
 }
 
-/**
- * SignUpWizard — the 3-step registration flow.
- *
- * State flow:
- *  • `step` (1|2|3)  → controls which step renders + drives the StepperTracker.
- *  • `data`          → ONE centralized object holding every field across all
- *                      steps. Because it lives at the wizard level (not per
- *                      step), values are preserved when the user clicks
- *                      Back/Next. `update()` patches individual keys.
- *  • On final submit → build a Session from the collected data and hand it to
- *                      App via onAuthenticated (routes to the dashboard).
- */
+const API_REGISTER_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/register'
+
 export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignUpWizardProps) {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<RegistrationData>(INITIAL_DATA)
   const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const update = (patch: Partial<RegistrationData>) => setData((prev) => ({ ...prev, ...patch }))
 
   const next = () => setStep((s) => Math.min(3, s + 1))
   const back = () => setStep((s) => Math.max(1, s - 1))
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
-    // Simulated account creation -> derive the merchant session from form data.
-    setTimeout(() => {
+    setErrorMessage(null)
+
+    // Build the request body matching the API spec
+    const payload = {
+      email: data.email,
+      role: 'consumer', // Change to your preferred default role if needed
+      password: data.password,
+      full_name: `${data.firstName} ${data.lastName}`.trim(),
+      phone_number: data.mobile,
+    }
+
+    try {
+      const response = await fetch(API_REGISTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.detail || errorData.message || 'Failed to register account. Please try again.'
+        )
+      }
+
+      const registeredUser = await response.json()
+
+      // Pass session data to parent app state
       onAuthenticated({
         hotelName: data.hotelName || 'Grand Regent Hotel',
-        merchantId: 'MER-' + Math.floor(1000 + Math.random() * 8999) + '-NEW',
-        email: `${data.firstName || 'owner'}@${(data.hotelName || 'hotel').replace(/\s+/g, '').toLowerCase()}.com`,
+        merchantId: registeredUser.id,
+        email: registeredUser.email,
       })
-    }, 800)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -87,20 +128,44 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
         </p>
       </header>
 
-      {/* Status stepper reflects the `step` state */}
+      {/* API Error Notification */}
+      {errorMessage && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+          <p>{errorMessage}</p>
+        </div>
+      )}
+
+      {/* Status stepper */}
       <StepperTracker steps={STEPS} current={step} />
 
       <form onSubmit={handleSubmit} className="mt-8">
-        {/* key={step} restarts the entrance animation on each step change */}
         <div key={step} className="animate-rise space-y-5">
           {step === 1 && (
             <>
+              <FormField label="Email Address" htmlFor="email">
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={data.email}
+                    onChange={(e) => update({ email: e.target.value })}
+                    placeholder="name@example.com"
+                    className={`${inputClass} pl-11`}
+                    data-testid="signup-email-input"
+                  />
+                </div>
+              </FormField>
+
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <FormField label="First Name" htmlFor="firstName">
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       id="firstName"
+                      required
                       value={data.firstName}
                       onChange={(e) => update({ firstName: e.target.value })}
                       placeholder="Jordan"
@@ -109,9 +174,11 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
                     />
                   </div>
                 </FormField>
+
                 <FormField label="Last Name" htmlFor="lastName">
                   <input
                     id="lastName"
+                    required
                     value={data.lastName}
                     onChange={(e) => update({ lastName: e.target.value })}
                     placeholder="Reyes"
@@ -127,6 +194,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
                   <input
                     id="mobile"
                     type="tel"
+                    required
                     value={data.mobile}
                     onChange={(e) => update({ mobile: e.target.value })}
                     placeholder="+1 (555) 000-1234"
@@ -142,6 +210,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
                   <input
                     id="signupPassword"
                     type="password"
+                    required
                     value={data.password}
                     onChange={(e) => update({ password: e.target.value })}
                     placeholder="Create a password"
@@ -252,7 +321,6 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
                 </div>
               </FormField>
 
-              {/* File-upload dropzone (mock — stores only the file name) */}
               <div>
                 <span className="mb-1.5 block text-sm font-semibold text-slate-700">
                   Business Documents
@@ -293,7 +361,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
           )}
         </div>
 
-        {/* Navigation controls — Back appears from step 2 onward */}
+        {/* Controls */}
         <div className="mt-8 flex items-center gap-3">
           {step > 1 && (
             <button
@@ -327,7 +395,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
             >
               {submitting ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" /> Creating console…
+                  <Loader2 className="h-5 w-5 animate-spin" /> Registering account…
                 </>
               ) : (
                 <>Submit &amp; Access Console</>
