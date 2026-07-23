@@ -13,19 +13,6 @@ interface RoomFormPanelProps {
 const MIN_IMAGES = 3
 const MAX_IMAGES = 7
 
-/**
- * RoomFormPanel — right-hand slide-over used to create a new room type.
- *
- * State flow:
- *  • Each field has its own controlled state; `images` is a STRING ARRAY of
- *    "mock uploaded" URLs. Clicking the dashed dropzone appends the next image
- *    from ROOM_IMAGE_POOL (capped at MAX_IMAGES); the X on a thumbnail removes it.
- *  • `amenities` stores the selected amenity item ids across all categories.
- *  • STRICT publish rule: `canPublish` is only true when
- *    MIN_IMAGES <= images.length <= MAX_IMAGES, which gates the Save button.
- *  • On save the assembled RoomType is bubbled up via onSave, then the panel
- *    resets (the reset also runs whenever the panel re-opens).
- */
 export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -96,6 +83,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
             <p className="text-xs text-slate-500">Publish a new listing to your inventory</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
             aria-label="Close"
@@ -168,7 +156,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               </div>
             </div>
 
-            <div>
+            <div className="relative">
               <label htmlFor="room-inventory" className={labelClass}>
                 Total Physical Inventory
               </label>
@@ -179,14 +167,14 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 value={inventory}
                 onChange={(e) => setInventory(e.target.value)}
                 placeholder="e.g. 12"
-                className={inputClass}
+                className={cn(inputClass, 'w-full')}
                 data-testid="room-inventory-input"
               />
             </div>
           </div>
 
           {/* Max capacity segmented control */}
-          <div>
+          <div className="pt-2">
             <span className={labelClass}>Max Capacity</span>
             <div className="grid grid-cols-4 gap-2">
               {CAPACITY_OPTIONS.map((opt) => {
