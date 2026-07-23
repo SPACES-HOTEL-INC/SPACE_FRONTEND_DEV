@@ -36,7 +36,7 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">s</h2>
+          <h2 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">Manage Rooms</h2>
           <p className="mt-1 text-sm text-slate-500">
             {rooms.length} active room type{rooms.length === 1 ? '' : 's'} in your inventory
           </p>
