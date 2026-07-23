@@ -71,21 +71,21 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
 
       <div
         className={cn(
-          'absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col bg-white shadow-card-lg transition-transform duration-300',
+          'absolute inset-y-0 right-0 flex w-full max-w-[560px] flex-col bg-white shadow-card-lg transition-transform duration-300 dark:bg-slate-900',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
         data-testid="room-form-panel"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4 dark:border-slate-800">
           <div>
-            <h3 className="text-lg font-extrabold tracking-tight text-ink">Add New Room Type</h3>
-            <p className="text-xs text-slate-500">Publish a new listing to your inventory</p>
+            <h3 className="text-lg font-extrabold tracking-tight text-ink dark:text-white">Add New Room Type</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Publish a new listing to your inventory</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink"
+            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink dark:hover:bg-slate-800 dark:hover:text-white"
             aria-label="Close"
             data-testid="room-form-close"
           >
@@ -129,11 +129,11 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               <label htmlFor="room-price" className={labelClass}>
                 Pricing (per night)
               </label>
-              <div className="flex gap-2">
+              <div className="flex w-full items-center gap-2">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className={`${selectClass} w-24 flex-none`}
+                  className={`${selectClass} w-28 flex-none`}
                   data-testid="room-currency-select"
                   aria-label="Currency"
                 >
@@ -150,13 +150,13 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0"
-                  className={inputClass}
+                  className={cn(inputClass, 'w-full min-w-0 flex-1')}
                   data-testid="room-price-input"
                 />
               </div>
             </div>
 
-            <div className="relative">
+            <div>
               <label htmlFor="room-inventory" className={labelClass}>
                 Total Physical Inventory
               </label>
@@ -174,7 +174,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
           </div>
 
           {/* Max capacity segmented control */}
-          <div className="pt-2">
+          <div>
             <span className={labelClass}>Max Capacity</span>
             <div className="grid grid-cols-4 gap-2">
               {CAPACITY_OPTIONS.map((opt) => {
@@ -188,8 +188,8 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                     className={cn(
                       'rounded-xl border py-2.5 text-sm font-semibold transition-all duration-200',
                       active
-                        ? 'border-brand-600 bg-brand-600 text-white'
-                        : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                        ? 'border-brand-600 bg-brand-600 text-white dark:border-brand-500 dark:bg-brand-500'
+                        : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
                     )}
                     data-testid={testId}
                   >
@@ -209,8 +209,8 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 return (
                   <div key={cat.id} data-testid={`amenity-category-${cat.id}`}>
                     <div className="mb-2.5 flex items-center gap-2">
-                      <CatIcon className="h-4 w-4 text-brand-600" />
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{cat.label}</p>
+                      <CatIcon className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{cat.label}</p>
                     </div>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {cat.items.map((item) => {
@@ -225,20 +225,20 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                             className={cn(
                               'flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200',
                               active
-                                ? 'border-brand-600 bg-brand-50 text-brand-700'
-                                : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                                ? 'border-brand-600 bg-brand-50 text-brand-700 dark:border-brand-500 dark:bg-brand-950/40 dark:text-brand-300'
+                                : 'border-line bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
                             )}
                             data-testid={`amenity-toggle-${item.id}`}
                           >
                             <span
                               className={cn(
                                 'grid h-5 w-5 flex-none place-items-center rounded-md border transition-colors',
-                                active ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white',
+                                active ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-700',
                               )}
                             >
                               {active && <Check className="h-3.5 w-3.5" />}
                             </span>
-                            <ItemIcon className={cn('h-4 w-4 flex-none', active ? 'text-brand-600' : 'text-slate-400')} />
+                            <ItemIcon className={cn('h-4 w-4 flex-none', active ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
                             <span className="truncate">{item.label}</span>
                           </button>
                         )
@@ -258,16 +258,16 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               type="button"
               onClick={addImage}
               disabled={images.length >= MAX_IMAGES}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-slate-50 px-6 py-8 text-center transition-colors hover:border-brand-600 hover:bg-brand-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-slate-50 px-6 py-8 text-center transition-colors hover:border-brand-600 hover:bg-brand-50/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-brand-500"
               data-testid="room-image-dropzone"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-600/10">
-                <UploadCloud className="h-6 w-6 text-brand-600" />
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-600/10 dark:bg-brand-500/20">
+                <UploadCloud className="h-6 w-6 text-brand-600 dark:text-brand-400" />
               </span>
-              <p className="text-sm font-semibold text-ink">
+              <p className="text-sm font-semibold text-ink dark:text-white">
                 {images.length >= MAX_IMAGES ? 'Maximum of 7 images reached' : 'Drag & drop or click to add a photo'}
               </p>
-              <p className="text-xs text-slate-500">JPG or PNG · 3 to 7 images required</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">JPG or PNG · 3 to 7 images required</p>
             </button>
 
             {/* Thumbnails */}
@@ -276,7 +276,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 {images.map((src, i) => (
                   <div
                     key={`${src}-${i}`}
-                    className="group relative aspect-square overflow-hidden rounded-xl border border-line bg-slate-100"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-line bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
                     data-testid={`room-image-thumb-${i}`}
                   >
                     <img src={src} alt={`Room ${i + 1}`} className="h-full w-full object-cover" />
@@ -296,7 +296,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
 
             {/* Dynamic helper text */}
             <p
-              className={cn('mt-2.5 text-xs font-medium', canPublish ? 'text-emerald-600' : 'text-amber-600')}
+              className={cn('mt-2.5 text-xs font-medium', canPublish ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}
               data-testid="image-helper-text"
             >
               {canPublish
@@ -307,11 +307,11 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 border-t border-line bg-white px-6 py-4">
+        <div className="flex items-center gap-3 border-t border-line bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-line bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            className="rounded-xl border border-line bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             data-testid="room-form-cancel"
           >
             Cancel
@@ -320,7 +320,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
             type="button"
             onClick={handleSave}
             disabled={!canPublish}
-            className="ml-auto flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+            className="ml-auto flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:bg-brand-500 dark:hover:bg-brand-600 dark:disabled:bg-slate-800 dark:disabled:text-slate-600"
             data-testid="save-listing-button"
           >
             <Plus className="h-[18px] w-[18px]" /> Save Listing
