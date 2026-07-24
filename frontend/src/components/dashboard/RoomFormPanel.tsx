@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { X, UploadCloud, Check, Plus } from 'lucide-react'
-import { cn, inputClass, selectClass, labelClass } from '../../lib/ui'
+import { cn, selectClass, labelClass } from '../../lib/ui'
 import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS, ROOM_IMAGE_POOL } from '../../data/mockData'
 import type { RoomType } from '../../types'
 
@@ -12,6 +12,27 @@ interface RoomFormPanelProps {
 
 const MIN_IMAGES = 3
 const MAX_IMAGES = 7
+
+/**
+ * Formats input strings with thousand separators while preserving decimal input
+ * (e.g. "160000.5" -> "160,000.5")
+ */
+const formatPriceInput = (val: string) => {
+  // Strip non-digit and non-period characters
+  const clean = val.replace(/[^0-9.]/g, '')
+  
+  if (!clean) return ''
+
+  // Split integer and decimal parts (take only the first decimal point)
+  const parts = clean.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts.length > 1 ? '.' + parts[1].slice(0, 2) : ''
+
+  // Format the integer portion with commas
+  const formattedInteger = integerPart ? Number(integerPart).toLocaleString('en-US') : '0'
+
+  return `${formattedInteger}${decimalPart}`
+}
 
 export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelProps) {
   const [title, setTitle] = useState('')
@@ -51,7 +72,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
       id: `rt-${Date.now()}`,
       title: title.trim() || 'Untitled Room',
       description: description.trim() || 'No description provided.',
-      price: Number(price) || 0,
+      price: parseFloat(price.replace(/,/g, '')) || 0, // Cleans "160,000.50" -> 160000.5 for database/state storage
       currency,
       inventory: Number(inventory) || 0,
       capacity,
@@ -103,7 +124,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Executive King Suite"
-              className={inputClass}
+              className="h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all"
               data-testid="room-title-input"
             />
           </div>
@@ -118,61 +139,61 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the room, view, bedding and highlights…"
-              className={`${inputClass} resize-none`}
+              className="w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all resize-none"
               data-testid="room-description-input"
             />
           </div>
 
           {/* Pricing & Inventory Grid */}
-<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-  {/* Pricing Field */}
-  <div>
-    <label htmlFor="room-price" className={labelClass}>
-      Pricing (per night)
-    </label>
-    <div className="flex h-11 w-full items-center overflow-hidden rounded-xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600">
-      <select
-        value={currency}
-        onChange={(e) => setCurrency(e.target.value)}
-        className="h-full border-r border-line bg-slate-50 px-3 text-sm font-semibold text-ink focus:outline-none"
-        aria-label="Currency"
-      >
-        {CURRENCIES.map((c) => (
-          <option key={c.code} value={c.symbol}>
-            {c.symbol} {c.code}
-          </option>
-        ))}
-      </select>
-      <input
-        id="room-price"
-        type="number"
-        min="0"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        placeholder="0"
-        className="h-full w-full min-w-0 bg-transparent px-3 text-sm text-ink focus:outline-none"
-        data-testid="room-price-input"
-      />
-    </div>
-  </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Pricing Field */}
+            <div>
+              <label htmlFor="room-price" className={labelClass}>
+                Pricing (per night)
+              </label>
+              <div className="flex h-11 w-full items-center overflow-hidden rounded-xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600">
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="h-full border-r border-line bg-slate-50 px-3 text-sm font-semibold text-ink focus:outline-none"
+                  aria-label="Currency"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.symbol}>
+                      {c.symbol} {c.code}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="room-price"
+                  type="text"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(e) => setPrice(formatPriceInput(e.target.value))}
+                  placeholder="0.00"
+                  className="h-full w-full min-w-0 bg-transparent px-3 text-sm text-ink focus:outline-none"
+                  data-testid="room-price-input"
+                />
+              </div>
+            </div>
 
-  {/* Inventory Field */}
-  <div>
-    <label htmlFor="room-inventory" className={labelClass}>
-      Total Physical Inventory
-    </label>
-    <input
-      id="room-inventory"
-      type="number"
-      min="0"
-      value={inventory}
-      onChange={(e) => setInventory(e.target.value)}
-      placeholder="e.g. 12"
-      className={inputClass}
-      data-testid="room-inventory-input"
-    />
-  </div>
-</div>
+            {/* Inventory Field */}
+            <div>
+              <label htmlFor="room-inventory" className={labelClass}>
+                Total Physical Inventory
+              </label>
+              <input
+                id="room-inventory"
+                type="number"
+                min="0"
+                value={inventory}
+                onChange={(e) => setInventory(e.target.value)}
+                placeholder="e.g. 12"
+                className="h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all"
+                data-testid="room-inventory-input"
+              />
+            </div>
+          </div>
 
           {/* Max capacity segmented control */}
           <div>
