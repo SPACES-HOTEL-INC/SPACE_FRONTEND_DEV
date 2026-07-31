@@ -5,27 +5,56 @@ interface BrandProps {
   className?: string
 }
 
-// The Spaces Hm wordmark + geometric mark. `light` for dark backgrounds,
-// `dark` for the off-white surfaces.
+/**
+ * The Spaces Hm wordmark + custom SVG icon mark.
+ * `light` for dark backgrounds (auth panel), `dark` for off-white surfaces (dashboard sidebar).
+ */
 export default function Brand({ variant = 'dark', className }: BrandProps) {
   const light = variant === 'light'
+
   return (
     <div className={cn('flex items-center gap-2.5', className)} data-testid="brand-logo">
-      <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-brand-600 shadow-[0_8px_20px_-6px_rgba(15,118,110,0.6)]">
-        <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-300" />
-        <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
+      {/* Custom Vector Arch Logo */}
+      <div className="h-9 w-9 flex-none">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          className="h-full w-full"
+        >
+          {/* Background Squircle */}
+          <rect width="512" height="512" rx="112" fill="#0A0F1D" />
+
+          {/* Main White Arch Form */}
           <path
-            d="M9 23c0-4.5 3.5-6.5 7-6.5s7-2 7-6.5"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
+            fill="#FFFFFF"
+            fillRule="evenodd"
+            d="M 136 368 
+               L 136 248 
+               C 136 181.7 189.7 128 256 128 
+               C 322.3 128 376 181.7 376 248 
+               L 376 368 
+               L 304 368 
+               L 304 248 
+               C 304 221.5 282.5 200 256 200 
+               C 229.5 200 208 221.5 208 248 
+               L 208 368 
+               Z
+               M 256 100 
+               A 32 32 0 0 1 256 164 
+               A 32 32 0 0 1 256 100 
+               Z"
           />
+
+          {/* Teal Top Dot */}
+          <circle cx="256" cy="132" r="30" fill="#60C3AD" />
         </svg>
       </div>
+
+      {/* Brand Text */}
       <span
         className={cn(
           'text-lg font-extrabold tracking-tight',
-          light ? 'text-white' : 'text-ink',
+          light ? 'text-white' : 'text-ink'
         )}
       >
         Spaces<span className="text-brand-500"> Hm</span>
