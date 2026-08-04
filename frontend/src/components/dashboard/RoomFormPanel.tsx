@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { X, UploadCloud, Check, Plus } from 'lucide-react'
-import { cn, inputClass, selectClass, labelClass } from '../../lib/ui'
+import { cn, selectClass, labelClass } from '../../lib/ui'
 import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS, ROOM_IMAGE_POOL } from '../../data/mockData'
 import type { RoomType } from '../../types'
 
@@ -14,18 +14,26 @@ const MIN_IMAGES = 3
 const MAX_IMAGES = 7
 
 /**
- * RoomFormPanel — right-hand slide-over used to create a new room type.
- *
- * State flow:
- *  • Each field has its own controlled state; `images` is a STRING ARRAY of
- *    "mock uploaded" URLs. Clicking the dashed dropzone appends the next image
- *    from ROOM_IMAGE_POOL (capped at MAX_IMAGES); the X on a thumbnail removes it.
- *  • `amenities` stores the selected amenity item ids across all categories.
- *  • STRICT publish rule: `canPublish` is only true when
- *    MIN_IMAGES <= images.length <= MAX_IMAGES, which gates the Save button.
- *  • On save the assembled RoomType is bubbled up via onSave, then the panel
- *    resets (the reset also runs whenever the panel re-opens).
+ * Formats input strings with thousand separators while preserving decimal input
+ * (e.g. "160000.5" -> "160,000.5")
  */
+const formatPriceInput = (val: string) => {
+  // Strip non-digit and non-period characters
+  const clean = val.replace(/[^0-9.]/g, '')
+  
+  if (!clean) return ''
+
+  // Split integer and decimal parts (take only the first decimal point)
+  const parts = clean.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts.length > 1 ? '.' + parts[1].slice(0, 2) : ''
+
+  // Format the integer portion with commas
+  const formattedInteger = integerPart ? Number(integerPart).toLocaleString('en-US') : '0'
+
+  return `${formattedInteger}${decimalPart}`
+}
+
 export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -64,7 +72,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
       id: `rt-${Date.now()}`,
       title: title.trim() || 'Untitled Room',
       description: description.trim() || 'No description provided.',
-      price: Number(price) || 0,
+      price: parseFloat(price.replace(/,/g, '')) || 0, // Cleans "160,000.50" -> 160000.5 for database/state storage
       currency,
       inventory: Number(inventory) || 0,
       capacity,
@@ -116,7 +124,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Executive King Suite"
-              className={inputClass}
+              className="h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all"
               data-testid="room-title-input"
             />
           </div>
@@ -131,22 +139,23 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the room, view, bedding and highlights…"
-              className={`${inputClass} resize-none`}
+              className="w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all resize-none"
               data-testid="room-description-input"
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {/* Pricing & Inventory Grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Pricing Field */}
             <div>
               <label htmlFor="room-price" className={labelClass}>
                 Pricing (per night)
               </label>
-              <div className="flex gap-2">
+              <div className="flex h-11 w-full items-center overflow-hidden rounded-xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className={`${selectClass} w-24 flex-none`}
-                  data-testid="room-currency-select"
+                  className="h-full border-r border-line bg-slate-50 px-3 text-sm font-semibold text-ink focus:outline-none"
                   aria-label="Currency"
                 >
                   {CURRENCIES.map((c) => (
@@ -157,17 +166,18 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 </select>
                 <input
                   id="room-price"
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0"
-                  className={inputClass}
+                  onChange={(e) => setPrice(formatPriceInput(e.target.value))}
+                  placeholder="0.00"
+                  className="h-full w-full min-w-0 bg-transparent px-3 text-sm text-ink focus:outline-none"
                   data-testid="room-price-input"
                 />
               </div>
             </div>
 
+            {/* Inventory Field */}
             <div>
               <label htmlFor="room-inventory" className={labelClass}>
                 Total Physical Inventory
@@ -179,7 +189,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 value={inventory}
                 onChange={(e) => setInventory(e.target.value)}
                 placeholder="e.g. 12"
-                className={inputClass}
+                className="h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all"
                 data-testid="room-inventory-input"
               />
             </div>

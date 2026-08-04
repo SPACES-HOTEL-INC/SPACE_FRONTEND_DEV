@@ -1,9 +1,10 @@
 // Shared control styling so inputs/selects stay consistent across the auth forms.
+// src/lib/ui.ts
 export const inputClass =
-  'w-full rounded-xl border border-line bg-white px-4 py-3 text-[15px] text-ink placeholder:text-slate-400 focus-ring'
+  'h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all'
 
 export const selectClass =
-  'w-full appearance-none rounded-xl border border-line bg-white px-4 py-3 pr-11 text-[15px] text-ink focus-ring cursor-pointer'
+  'h-11 rounded-xl border border-line bg-white px-2.5 py-2 text-sm font-medium text-ink focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all'
 
 export const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700'
 
