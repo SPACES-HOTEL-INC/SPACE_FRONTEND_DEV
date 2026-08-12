@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { X, UploadCloud, Check, Plus } from 'lucide-react'
-import { cn, selectClass, labelClass } from '../../lib/ui'
+import { cn, labelClass } from '../../lib/ui'
 import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS, ROOM_IMAGE_POOL } from '../../data/mockData'
 import type { RoomType } from '../../types'
+import CustomSelect from '../ui/CustomSelect'
 
 interface RoomFormPanelProps {
   open: boolean
@@ -18,17 +19,13 @@ const MAX_IMAGES = 7
  * (e.g. "160000.5" -> "160,000.5")
  */
 const formatPriceInput = (val: string) => {
-  // Strip non-digit and non-period characters
   const clean = val.replace(/[^0-9.]/g, '')
-  
   if (!clean) return ''
 
-  // Split integer and decimal parts (take only the first decimal point)
   const parts = clean.split('.')
   const integerPart = parts[0]
   const decimalPart = parts.length > 1 ? '.' + parts[1].slice(0, 2) : ''
 
-  // Format the integer portion with commas
   const formattedInteger = integerPart ? Number(integerPart).toLocaleString('en-US') : '0'
 
   return `${formattedInteger}${decimalPart}`
@@ -38,19 +35,20 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
-  const [currency, setCurrency] = useState('$')
+  // Default to Naira symbol ₦
+  const [currency, setCurrency] = useState('₦')
   const [inventory, setInventory] = useState('')
   const [capacity, setCapacity] = useState('2')
   const [amenities, setAmenities] = useState<string[]>([])
   const [images, setImages] = useState<string[]>([])
 
-  // Reset the form each time the panel is opened.
+  // Reset the form each time the panel is opened
   useEffect(() => {
     if (open) {
       setTitle('')
       setDescription('')
       setPrice('')
-      setCurrency('$')
+      setCurrency('₦')
       setInventory('')
       setCapacity('2')
       setAmenities([])
@@ -72,7 +70,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
       id: `rt-${Date.now()}`,
       title: title.trim() || 'Untitled Room',
       description: description.trim() || 'No description provided.',
-      price: parseFloat(price.replace(/,/g, '')) || 0, // Cleans "160,000.50" -> 160000.5 for database/state storage
+      price: parseFloat(price.replace(/,/g, '')) || 0,
       currency,
       inventory: Number(inventory) || 0,
       capacity,
@@ -82,6 +80,13 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
     })
     onClose()
   }
+
+  // Transform CURRENCIES items into standard option format for CustomSelect
+  // Transform CURRENCIES items into standard option format for CustomSelect
+  const currencyOptions = CURRENCIES.map((c) => ({
+    label: `${c.symbol} ${c.code}`,
+    value: c.symbol,
+  }))
 
   return (
     <div className={cn('fixed inset-0 z-50', open ? 'pointer-events-auto' : 'pointer-events-none')} aria-hidden={!open}>
@@ -144,26 +149,26 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
             />
           </div>
 
-          {/* Pricing & Inventory Grid */}
+          {/* Combined Side-by-Side Grid for Pricing & Inventory */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Pricing Field */}
             <div>
               <label htmlFor="room-price" className={labelClass}>
                 Pricing (per night)
               </label>
-              <div className="flex h-11 w-full items-center overflow-hidden rounded-xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600">
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="h-full border-r border-line bg-slate-50 px-3 text-sm font-semibold text-ink focus:outline-none"
-                  aria-label="Currency"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.symbol}>
-                      {c.symbol} {c.code}
-                    </option>
-                  ))}
-                </select>
+              {/* REMOVED overflow-hidden so the dropdown items can drop down visible */}
+              <div className="flex h-14 w-full items-center rounded-2xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600 relative z-20">
+                {/* Clean Left-Aligned Custom Currency Dropdown Addon */}
+                <div className="relative h-full w-28 shrink-0 border-r border-line">
+                  <CustomSelect
+                    options={currencyOptions}
+                    value={currency}
+                    onChange={(val) => setCurrency(val)}
+                    className="h-full [&>button]:h-full [&>button]:rounded-l-2xl [&>button]:rounded-r-none [&>button]:border-none [&>button]:bg-transparent [&>button]:shadow-none"
+                  />
+                </div>
+
+                {/* Uninterrupted Numeric Amount Input Field */}
                 <input
                   id="room-price"
                   type="text"
@@ -171,7 +176,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                   value={price}
                   onChange={(e) => setPrice(formatPriceInput(e.target.value))}
                   placeholder="0.00"
-                  className="h-full w-full min-w-0 bg-transparent px-3 text-sm text-ink focus:outline-none"
+                  className="h-full w-full min-w-0 bg-transparent px-4 text-base text-ink focus:outline-none rounded-r-2xl"
                   data-testid="room-price-input"
                 />
               </div>
@@ -189,7 +194,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                 value={inventory}
                 onChange={(e) => setInventory(e.target.value)}
                 placeholder="e.g. 12"
-                className="h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 transition-all"
+                className="h-14 w-full rounded-2xl border border-line bg-white px-3.5 py-2 text-sm text-ink placeholder:text-slate-400 transition-all focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
                 data-testid="room-inventory-input"
               />
             </div>

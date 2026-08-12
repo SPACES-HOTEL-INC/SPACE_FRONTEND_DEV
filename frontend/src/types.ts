@@ -1,8 +1,8 @@
 // Role definition for access control
 export type UserRole = 'CEO' | 'RECEPTIONIST'
 
-// Available property categories
-export type PropertyTypeCategory = 'Hotel' | 'Shortlet Apartment' | 'Resort' | 'Villa'
+// Available property categories (Updated to support lowercase variants from your forms)
+export type PropertyTypeCategory = 'Hotel' | 'Shortlet Apartment' | 'Resort' | 'Villa' | 'hotel' | 'villa' | 'shortlet' | 'apartment'
 
 // Property Branch structure for multi-location businesses
 export interface Branch {
@@ -35,16 +35,22 @@ export interface Session {
   availableBranches?: Branch[] // List of branches managed by CEO
 }
 
-// Room / Property item structure
+// Room / Property item structure (Updated fields to align with ManageRooms rendering grid)
 export interface RoomType {
   id: string
   branchId: string // Linked to specific branch
-  propertyType: PropertyTypeCategory // Hotel, Shortlet, etc.
-  name: string // e.g. Executive Suite, 2-Bedroom Apartment
+  propertyId?: string // Added alignment mapper for UI component
+  propertyType: PropertyTypeCategory 
+  name: string 
+  title?: string // Added alignment mapper for UI card components
   basePrice: number
+  price?: number // Added alignment mapper for UI pricing
   capacity: number
   totalUnits: number
+  inventory?: number // Added alignment mapper for UI units
   amenities: string[]
+  images?: string[] // For the Image carousel
+  currency?: string // Currency display configuration
   description?: string
   status: 'available' | 'maintenance' | 'booked'
 }
@@ -65,10 +71,10 @@ export interface Booking {
   createdAt: string
 }
 
-// Overview statistics interface (CEO aggregated vs. Receptionist branch view)
+// Overview statistics interface
 export interface DashboardStats {
   occupancyRate: number
   activeRooms: number
-  dailyRevenue?: number // Only computed/visible for CEO
+  dailyRevenue?: number 
   pendingArrivalsCount: number
 }
