@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Building2, MapPin, Plus, ArrowLeft } from 'lucide-react'
+import { X, Building2, MapPin, ArrowLeft } from 'lucide-react'
 import { cn } from '../../lib/ui'
 import CustomSelect from '../ui/CustomSelect'
 
@@ -39,6 +39,19 @@ export default function PropertyFormModal({ open, onClose, onSave, propertyToEdi
   const [starRating, setStarRating] = useState(5)
   const [address, setAddress] = useState('')
 
+  // Prevent background scroll on document.body while modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
   useEffect(() => {
     if (propertyToEdit) {
       setName(propertyToEdit.name)
@@ -69,15 +82,17 @@ export default function PropertyFormModal({ open, onClose, onSave, propertyToEdi
   }
 
   return (
-    <div className={cn('fixed inset-0 z-50 flex items-center justify-center', open ? 'pointer-events-auto' : 'pointer-events-none')}>
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', open ? 'pointer-events-auto' : 'pointer-events-none')}>
+      {/* Backdrop */}
       <div
         className={cn('absolute inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')}
         onClick={onClose}
       />
 
+      {/* Modal Card */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-xl transform rounded-3xl bg-white p-8 shadow-xl transition-all duration-300 border border-slate-100',
+          'relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto transform rounded-3xl bg-white p-8 shadow-xl transition-all duration-300 border border-slate-100',
           open ? 'scale-100 opacity-100' : 'scale-95 opacity-0',
         )}
       >

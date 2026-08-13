@@ -42,6 +42,19 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
   const [amenities, setAmenities] = useState<string[]>([])
   const [images, setImages] = useState<string[]>([])
 
+  // Lock body scroll when the panel is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
   // Reset the form each time the panel is opened
   useEffect(() => {
     if (open) {
@@ -81,7 +94,6 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
     onClose()
   }
 
-  // Transform CURRENCIES items into standard option format for CustomSelect
   // Transform CURRENCIES items into standard option format for CustomSelect
   const currencyOptions = CURRENCIES.map((c) => ({
     label: `${c.symbol} ${c.code}`,
@@ -156,8 +168,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
               <label htmlFor="room-price" className={labelClass}>
                 Pricing (per night)
               </label>
-              {/* REMOVED overflow-hidden so the dropdown items can drop down visible */}
-              <div className="flex h-14 w-full items-center rounded-2xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600 relative z-20">
+              <div className="relative z-20 flex h-14 w-full items-center rounded-2xl border border-line bg-white focus-within:border-brand-600 focus-within:ring-1 focus-within:ring-brand-600">
                 {/* Clean Left-Aligned Custom Currency Dropdown Addon */}
                 <div className="relative h-full w-28 shrink-0 border-r border-line">
                   <CustomSelect
@@ -176,7 +187,7 @@ export default function RoomFormPanel({ open, onClose, onSave }: RoomFormPanelPr
                   value={price}
                   onChange={(e) => setPrice(formatPriceInput(e.target.value))}
                   placeholder="0.00"
-                  className="h-full w-full min-w-0 bg-transparent px-4 text-base text-ink focus:outline-none rounded-r-2xl"
+                  className="h-full w-full min-w-0 rounded-r-2xl bg-transparent px-4 text-base text-ink focus:outline-none"
                   data-testid="room-price-input"
                 />
               </div>
