@@ -10,7 +10,7 @@ interface PropertyFormModalProps {
   onSave: (property: Branch) => void
 }
 
-const MIN_IMAGES = 1
+const MIN_IMAGES = 0
 const MAX_IMAGES = 5
 
 const PROPERTY_TYPES = [
@@ -20,6 +20,8 @@ const PROPERTY_TYPES = [
   { label: 'Boutique Hotel', value: 'Boutique Hotel' },
   { label: 'Villa', value: 'Villa' },
 ]
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
 export default function PropertyFormModal({ open, onClose, onSave }: PropertyFormModalProps) {
   const [name, setName] = useState('')
@@ -112,7 +114,7 @@ export default function PropertyFormModal({ open, onClose, onSave }: PropertyFor
 
       const token = localStorage.getItem('token') || localStorage.getItem('access_token')
 
-      const response = await fetch('/api/v1/properties', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/properties`, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -122,13 +124,18 @@ export default function PropertyFormModal({ open, onClose, onSave }: PropertyFor
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.detail || errData.message || 'Failed to create property.')
+        const errorDetail = typeof errData.detail === 'string'
+          ? errData.detail
+          : Array.isArray(errData.detail)
+          ? errData.detail.map((e: any) => `${e.loc?.slice(-1)[0] || 'field'}: ${e.msg}`).join(', ')
+          : errData.message || 'Failed to create property branch.'
+        throw new Error(errorDetail)
       }
 
       const createdProperty = await response.json()
 
       const formattedProperty: Branch = {
-        id: createdProperty.id,
+        id: createdProperty.id || `prop_${Date.now()}`,
         name: createdProperty.name || name,
         propertyType: createdProperty.property_type || propertyType,
         location: createdProperty.city ? `${createdProperty.city}, ${createdProperty.state}` : address,
@@ -172,6 +179,7 @@ export default function PropertyFormModal({ open, onClose, onSave }: PropertyFor
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
             className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-ink disabled:opacity-50"
