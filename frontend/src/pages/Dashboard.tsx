@@ -27,22 +27,23 @@ interface ApiProperty {
   city?: string
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
+
 export default function Dashboard({ session, onSignOut }: DashboardProps) {
   const [activeNav, setActiveNav] = useState('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [branches, setBranches] = useState<Branch[]>([])
-  const [loadingProperties, setLoadingProperties] = useState(true)
+  const [, setLoadingProperties] = useState(true)
 
   const [, setStaffAccounts] = useState<StaffAccount[]>([])
 
-  // Fetch real host properties from the database
   useEffect(() => {
     async function fetchProperties() {
       try {
         const token = session?.token || localStorage.getItem('token')
-        const response = await fetch('/api/v1/properties/mine', {
+        const response = await fetch(`${API_BASE_URL}/api/v1/properties/mine`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -109,11 +110,12 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
         onClose={() => setMenuOpen(false)}
         onSignOut={onSignOut}
         session={session}
+        branches={branches}
         onOpenStaffModal={() => setIsStaffModalOpen(true)}
       />
 
       <div className="lg:pl-[264px]">
-        <MiniHeader session={session} onOpenMenu={() => setMenuOpen(true)} />
+        <MiniHeader session={session} branches={branches} onOpenMenu={() => setMenuOpen(true)} />
 
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {activeNav === 'overview' && (

@@ -2,7 +2,7 @@ import { X, LogOut, Settings, LifeBuoy, Users } from 'lucide-react'
 import Brand from '../ui/Brand'
 import { cn } from '../../lib/ui'
 import { NAV_ITEMS } from '../../data/mockData'
-import type { Session } from '../../types'
+import type { Session, Branch } from '../../types'
 
 interface SidebarProps {
   active: string
@@ -11,18 +11,17 @@ interface SidebarProps {
   onClose: () => void
   onSignOut: () => void
   session?: Session
+  branches?: Branch[]
   onOpenStaffModal?: () => void
 }
 
-// Inner content shared by the desktop rail and the mobile slide-over.
 function SidebarContent({
   active,
   onSelect,
   onSignOut,
   session,
   onOpenStaffModal,
-}: Pick<SidebarProps, 'active' | 'onSelect' | 'onSignOut' | 'session' | 'onOpenStaffModal'>) {
-  // Default to 'CEO' if session role is not explicitly provided
+}: Pick<SidebarProps, 'active' | 'onSelect' | 'onSignOut' | 'session' | 'branches' | 'onOpenStaffModal'>) {
   const isCEO = session?.role !== 'RECEPTIONIST'
 
   return (
@@ -32,7 +31,6 @@ function SidebarContent({
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4" data-testid="sidebar-nav">
-        {/* Header container with "+ Staff" removed */}
         <div className="flex items-center justify-between px-3 pb-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Console
@@ -40,12 +38,10 @@ function SidebarContent({
         </div>
 
         {NAV_ITEMS.filter((item) => {
-          // Hide Payouts from Receptionist role
           if (!isCEO && item.id === 'payouts') return false
           return true
         }).map(({ id, label, icon: Icon }) => {
           const isActive = id === active
-          // Display "Property Type" instead of "Manage Rooms"
           const displayLabel = id === 'rooms' || id === 'manage-rooms' ? 'Property Type' : label
 
           return (
@@ -71,7 +67,6 @@ function SidebarContent({
           )
         })}
 
-        {/* Dedicated Receptionist Accounts Tab for CEO */}
         {isCEO && onOpenStaffModal && (
           <button
             type="button"
@@ -86,7 +81,6 @@ function SidebarContent({
       </nav>
 
       <div className="space-y-1 border-t border-line px-3 py-4">
-        {/* Settings hidden from Receptionist role */}
         {isCEO && (
           <button
             onClick={() => onSelect('settings')}
@@ -120,6 +114,7 @@ export default function Sidebar({
   onClose,
   onSignOut,
   session,
+  branches,
   onOpenStaffModal,
 }: SidebarProps) {
   const handleSelect = (id: string) => {
@@ -129,18 +124,17 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop rail */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] border-r border-line bg-white lg:block">
         <SidebarContent
           active={active}
           onSelect={onSelect}
           onSignOut={onSignOut}
           session={session}
+          branches={branches}
           onOpenStaffModal={onOpenStaffModal}
         />
       </aside>
 
-      {/* Mobile slide-over */}
       <div
         className={cn(
           'fixed inset-0 z-50 lg:hidden',
@@ -175,6 +169,7 @@ export default function Sidebar({
             onSelect={handleSelect}
             onSignOut={onSignOut}
             session={session}
+            branches={branches}
             onOpenStaffModal={onOpenStaffModal}
           />
         </div>
