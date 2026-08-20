@@ -14,7 +14,7 @@ interface StaffModalProps {
 export default function StaffModal({
   isOpen,
   onClose,
-  branches,
+  branches = [],
   onCreateStaff,
 }: StaffModalProps) {
   const [name, setName] = useState('')
@@ -22,6 +22,13 @@ export default function StaffModal({
   const [password, setPassword] = useState('')
   const [selectedBranch, setSelectedBranch] = useState(branches[0]?.id || '')
   const [showPassword, setShowPassword] = useState(false)
+
+  // Keep selectedBranch in sync when async branches load or change
+  useEffect(() => {
+    if (branches.length > 0 && (!selectedBranch || !branches.some((b) => b.id === selectedBranch))) {
+      setSelectedBranch(branches[0].id)
+    }
+  }, [branches, selectedBranch])
 
   // Prevent background scrolling while modal is open
   useEffect(() => {
@@ -40,7 +47,15 @@ export default function StaffModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onCreateStaff({ name, email, pass: password, branchId: selectedBranch })
+    const targetBranchId = selectedBranch || branches[0]?.id || ''
+    
+    onCreateStaff({ 
+      name, 
+      email, 
+      pass: password, 
+      branchId: targetBranchId 
+    })
+    
     setName('')
     setEmail('')
     setPassword('')
