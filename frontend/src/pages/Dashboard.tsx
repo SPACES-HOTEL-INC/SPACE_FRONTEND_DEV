@@ -19,30 +19,56 @@ interface Toast {
   message: string
 }
 
+interface ApiProperty {
+  id: string
+  hotel_name: string
+  property_type: string
+  address: string
+  city?: string
+}
+
 export default function Dashboard({ session, onSignOut }: DashboardProps) {
   const [activeNav, setActiveNav] = useState('overview')
   const [menuOpen, setMenuOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
-
-  const [branches] = useState<Branch[]>([
-    {
-      id: 'b1',
-      name: 'Grand Regent Hotel - Ikeja',
-      propertyType: 'Hotel',
-      address: '15 Allen Avenue',
-      city: 'Lagos',
-    },
-    {
-      id: 'b2',
-      name: 'Grand Regent Suites - Lekki',
-      propertyType: 'Shortlet Apartment',
-      address: 'Admiralty Way, Phase 1',
-      city: 'Lagos',
-    },
-  ])
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [loadingProperties, setLoadingProperties] = useState(true)
 
   const [, setStaffAccounts] = useState<StaffAccount[]>([])
+
+  // Fetch real host properties from the database
+  useEffect(() => {
+    async function fetchProperties() {
+      try {
+        const token = session?.token || localStorage.getItem('token')
+        const response = await fetch('/api/v1/properties/mine', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data: ApiProperty[] = await response.json()
+          const mappedBranches: Branch[] = data.map((prop) => ({
+            id: prop.id,
+            name: prop.hotel_name,
+            propertyType: prop.property_type,
+            address: prop.address,
+            city: prop.city || '',
+          }))
+          setBranches(mappedBranches)
+        }
+      } catch (error) {
+        console.error('Failed to fetch properties:', error)
+      } finally {
+        setLoadingProperties(false)
+      }
+    }
+
+    fetchProperties()
+  }, [session])
 
   useEffect(() => {
     if (!toast) return
@@ -90,7 +116,9 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
         <MiniHeader session={session} onOpenMenu={() => setMenuOpen(true)} />
 
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {activeNav === 'overview' && <OverviewView session={session} onNotify={notify} />}
+          {activeNav === 'overview' && (
+            <OverviewView session={session} branches={branches} onNotify={notify} />
+          )}
           {(activeNav === 'rooms' || activeNav === 'property-type') && (
             <ManageRooms onNotify={notify} />
           )}
