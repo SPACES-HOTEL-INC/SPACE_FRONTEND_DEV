@@ -27,6 +27,12 @@ interface ApiProperty {
   city?: string
 }
 
+interface UserProfile {
+  id?: string
+  full_name?: string
+  email?: string
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
 export default function Dashboard({ session, onSignOut }: DashboardProps) {
@@ -35,40 +41,69 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
   const [toast, setToast] = useState<Toast | null>(null)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [branches, setBranches] = useState<Branch[]>([])
-  const [, setLoadingProperties] = useState(true)
-
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [, setStaffAccounts] = useState<StaffAccount[]>([])
 
   useEffect(() => {
-    async function fetchProperties() {
-      try {
-        const token = session?.token || localStorage.getItem('token')
-        const response = await fetch(`${API_BASE_URL}/api/v1/properties/mine`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        })
+    async function loadDashboardData() {
+      // 1. Extract raw token string safely
+      const rawToken =
+        session?.token ||
+        localStorage.getItem('token') ||
+        localStorage.getItem('access_token') ||
+        ''
 
-        if (response.ok) {
-          const data: ApiProperty[] = await response.json()
-          const mappedBranches: Branch[] = data.map((prop) => ({
-            id: prop.id,
-            name: prop.hotel_name,
-            propertyType: prop.property_type,
-            address: prop.address,
-            city: prop.city || '',
-          }))
-          setBranches(mappedBranches)
+      const cleanToken = rawToken.replace(/^["']|["']$/g, '').trim()
+
+      // 2. Validate token format (Must have exactly 3 dot-separated JWT segments)
+      if (!cleanToken || cleanToken === 'null' || cleanToken === 'undefined' || cleanToken.split('.').length !== 3) {
+        console.warn('⚠️ Invalid or missing JWT token. Please sign in again.')
+        return
+      }
+
+      const headers = {
+        Authorization: `Bearer ${cleanToken}`,
+        'Content-Type': 'application/json',
+      }
+
+      // Fetch User Profile
+      try {
+        const userRes = await fetch(`${API_BASE_URL}/api/v1/users/me`, { headers })
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          console.log('✅ User profile fetched:', userData)
+          setUserProfile(userData)
+        } else if (userRes.status === 401) {
+          console.warn('⚠️ Session expired or invalid token.')
         }
-      } catch (error) {
-        console.error('Failed to fetch properties:', error)
-      } finally {
-        setLoadingProperties(false)
+      } catch (err) {
+        console.error('❌ User profile request error:', err)
+      }
+
+      // Fetch Host Properties
+      try {
+        const propRes = await fetch(`${API_BASE_URL}/api/v1/properties/mine`, { headers })
+        if (propRes.ok) {
+          const propData: ApiProperty[] = await propRes.json()
+          console.log('✅ Properties fetched:', propData)
+
+          if (Array.isArray(propData) && propData.length > 0) {
+            const mappedBranches: Branch[] = propData.map((prop) => ({
+              id: prop.id,
+              name: prop.hotel_name,
+              propertyType: prop.property_type,
+              address: prop.address,
+              city: prop.city || '',
+            }))
+            setBranches(mappedBranches)
+          }
+        }
+      } catch (err) {
+        console.error('❌ Properties request error:', err)
       }
     }
 
-    fetchProperties()
+    loadDashboardData()
   }, [session])
 
   useEffect(() => {
@@ -78,6 +113,15 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
   }, [toast])
 
   const notify = (title: string, message: string) => setToast({ title, message })
+
+  const updatedSession: Session = {
+    ...session,
+    hotelName: branches[0]?.name || userProfile?.full_name || session?.hotelName || 'My Account',
+    merchantId: userProfile?.id
+      ? `MER-${userProfile.id.slice(0, 4).toUpperCase()}`
+      : session?.merchantId || 'MER-HOST',
+    user: userProfile || session?.user,
+  }
 
   const handleCreateStaff = (staffData: {
     name: string
@@ -109,17 +153,21 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
         mobileOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         onSignOut={onSignOut}
-        session={session}
+        session={updatedSession}
         branches={branches}
         onOpenStaffModal={() => setIsStaffModalOpen(true)}
       />
 
       <div className="lg:pl-[264px]">
-        <MiniHeader session={session} branches={branches} onOpenMenu={() => setMenuOpen(true)} />
+        <MiniHeader
+          session={updatedSession}
+          branches={branches}
+          onOpenMenu={() => setMenuOpen(true)}
+        />
 
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {activeNav === 'overview' && (
-            <OverviewView session={session} branches={branches} onNotify={notify} />
+            <OverviewView session={updatedSession} branches={branches} onNotify={notify} />
           )}
           {(activeNav === 'rooms' || activeNav === 'property-type') && (
             <ManageRooms onNotify={notify} />
