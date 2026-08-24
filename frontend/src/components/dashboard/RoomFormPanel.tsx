@@ -70,16 +70,33 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       })
-      if (res.ok) {
-        const data = await res.json()
-        const items = Array.isArray(data) ? data : data.items || []
-        setHostProperties(items)
-        if (items.length > 0 && !selectedPropertyId) {
-          setSelectedPropertyId(items[0].id)
-        }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.detail || `Failed to fetch properties (Status ${res.status})`)
       }
-    } catch (err) {
+
+      const data = await res.json()
+
+      // Robustly normalize property arrays across common API response wrappers
+      const rawList = Array.isArray(data)
+        ? data
+        : data.properties || data.items || data.data || []
+
+      // Standardize string IDs and title/name fallbacks
+      const items: PropertyOption[] = rawList.map((p: any) => ({
+        id: String(p.id ?? p._id ?? ''),
+        title: p.title || p.name || p.property_name || `Property #${p.id}`,
+      }))
+
+      setHostProperties(items)
+
+      if (items.length > 0) {
+        setSelectedPropertyId((prev) => prev || items[0].id)
+      }
+    } catch (err: any) {
       console.error('Failed to load host properties:', err)
+      setErrorMessage(err.message || 'Could not load your properties.')
     } finally {
       setIsLoadingProperties(false)
     }
@@ -88,6 +105,9 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
   // Reset form upon opening
   useEffect(() => {
     if (open) {
+      if (!propertyId) {
+        setSelectedPropertyId('')
+      }
       setTitle('')
       setDescription('')
       setPrice('')
@@ -101,7 +121,7 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
       setIsSubmitting(false)
       setErrorMessage(null)
     }
-  }, [open])
+  }, [open, propertyId])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
