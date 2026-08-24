@@ -42,6 +42,19 @@ export default function PropertyFormModal({ open, onClose, onSave }: PropertyFor
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Lock background scroll when the modal is open
+useEffect(() => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+
+  return () => {
+    document.body.style.overflow = ''
+  }
+}, [open])
+
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
