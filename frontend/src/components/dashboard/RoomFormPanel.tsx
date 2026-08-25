@@ -102,6 +102,18 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
     }
   }
 
+   // Lock background scroll when the modal is open
+useEffect(() => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+
+  return () => {
+    document.body.style.overflow = ''
+  }
+}, [open])
   // Reset form upon opening
   useEffect(() => {
     if (open) {
