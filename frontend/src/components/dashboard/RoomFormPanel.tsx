@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { X, UploadCloud, Check, Plus, Loader2, Building2 } from 'lucide-react'
 import { cn, labelClass } from '../../lib/ui'
+import { fetchWithAuth } from '../../lib/api'
 import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS } from '../../data/mockData'
 import type { RoomType } from '../../types'
 import CustomSelect from '../ui/CustomSelect'
@@ -184,22 +185,10 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
         formData.append('images', file)
       })
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-
-      const response = await fetch('/api/v1/rooms/upload', {
+      const createdRoom = await fetchWithAuth('/api/v1/rooms/upload', {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
         body: formData,
       })
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.detail || 'Failed to upload room and images.')
-      }
-
-      const createdRoom = await response.json()
 
       const roomFormatted: RoomType = {
         id: createdRoom.id,

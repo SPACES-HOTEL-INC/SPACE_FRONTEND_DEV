@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { X, UploadCloud, Check, Plus, Loader2, Building2 } from 'lucide-react'
 import { cn, labelClass, inputClass } from '../../lib/ui'
+import { fetchWithAuth } from '../../lib/api'
 import { AMENITY_CATEGORIES } from '../../data/mockData'
 import type { Branch } from '../../types'
 
@@ -125,27 +126,10 @@ useEffect(() => {
         formData.append('images', file)
       })
 
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-
-      const response = await fetch(`${API_BASE_URL}/api/v1/properties`, {
+      const createdProperty = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
         body: formData,
       })
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        const errorDetail = typeof errData.detail === 'string'
-          ? errData.detail
-          : Array.isArray(errData.detail)
-          ? errData.detail.map((e: any) => `${e.loc?.slice(-1)[0] || 'field'}: ${e.msg}`).join(', ')
-          : errData.message || 'Failed to create property branch.'
-        throw new Error(errorDetail)
-      }
-
-      const createdProperty = await response.json()
 
       const formattedProperty: Branch = {
         id: createdProperty.id || `prop_${Date.now()}`,
