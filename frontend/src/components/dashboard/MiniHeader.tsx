@@ -1,23 +1,36 @@
 import { Menu, Bell, Search } from 'lucide-react'
-import type { Session } from '../../types'
+import type { Session, Branch } from '../../types'
 
 interface MiniHeaderProps {
-  session: Session
+  session?: Session
+  branches?: Branch[]
   onOpenMenu: () => void
 }
 
-/**
- * Sticky mini-header. Shows the logged-in hotel identity (name + merchant ID),
- * a live "Online" status pill, quick search, notifications and the account
- * avatar. The hamburger (mobile only) opens the sidebar drawer.
- */
-export default function MiniHeader({ session, onOpenMenu }: MiniHeaderProps) {
-  const avatarInitials = session.hotelName
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
+export default function MiniHeader({ session, branches, onOpenMenu }: MiniHeaderProps) {
+  // Priority: 1st database property name -> session hotel name -> user full name -> default fallback
+  const activeHotelName =
+    branches?.[0]?.name ||
+    session?.hotelName ||
+    session?.user?.full_name ||
+    'My Property'
+
+  // Dynamic Merchant ID derived from session or user ID
+  const merchantId =
+    session?.merchantId ||
+    (session?.user?.id
+      ? `MER-${session.user.id.slice(0, 4).toUpperCase()}`
+      : 'MER-HOST')
+
+  // Generate dynamic initials for the avatar box
+  const avatarInitials =
+    activeHotelName
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase() || 'MP'
 
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-white/80 backdrop-blur-lg">
@@ -31,14 +44,14 @@ export default function MiniHeader({ session, onOpenMenu }: MiniHeaderProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Hotel identity */}
+        {/* Dynamic Identity */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
             <h1
               className="truncate text-base font-extrabold tracking-tight text-ink sm:text-lg"
               data-testid="header-hotel-name"
             >
-              {session.hotelName}
+              {activeHotelName}
             </h1>
             <span
               className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20 sm:inline-flex"
@@ -52,7 +65,7 @@ export default function MiniHeader({ session, onOpenMenu }: MiniHeaderProps) {
             </span>
           </div>
           <p className="truncate text-xs text-slate-500" data-testid="header-merchant-id">
-            Merchant ID · {session.merchantId}
+            Merchant ID · {merchantId}
           </p>
         </div>
 

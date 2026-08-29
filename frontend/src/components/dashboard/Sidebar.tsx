@@ -1,7 +1,8 @@
-import { X, LogOut, Settings, LifeBuoy } from 'lucide-react'
+import { X, LogOut, Settings, LifeBuoy, Users } from 'lucide-react'
 import Brand from '../ui/Brand'
 import { cn } from '../../lib/ui'
 import { NAV_ITEMS } from '../../data/mockData'
+import type { Session, Branch } from '../../types'
 
 interface SidebarProps {
   active: string
@@ -9,14 +10,20 @@ interface SidebarProps {
   mobileOpen: boolean
   onClose: () => void
   onSignOut: () => void
+  session?: Session
+  branches?: Branch[]
+  onOpenStaffModal?: () => void
 }
 
-// Inner content shared by the desktop rail and the mobile slide-over.
 function SidebarContent({
   active,
   onSelect,
   onSignOut,
-}: Pick<SidebarProps, 'active' | 'onSelect' | 'onSignOut'>) {
+  session,
+  onOpenStaffModal,
+}: Pick<SidebarProps, 'active' | 'onSelect' | 'onSignOut' | 'session' | 'branches' | 'onOpenStaffModal'>) {
+  const isCEO = session?.role !== 'RECEPTIONIST'
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center px-6">
@@ -24,11 +31,19 @@ function SidebarContent({
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4" data-testid="sidebar-nav">
-        <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Console
-        </p>
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+        <div className="flex items-center justify-between px-3 pb-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Console
+          </span>
+        </div>
+
+        {NAV_ITEMS.filter((item) => {
+          if (!isCEO && item.id === 'payouts') return false
+          return true
+        }).map(({ id, label, icon: Icon }) => {
           const isActive = id === active
+          const displayLabel = id === 'rooms' || id === 'manage-rooms' ? 'Property Type' : label
+
           return (
             <button
               key={id}
@@ -47,17 +62,37 @@ function SidebarContent({
                   isActive ? 'text-white' : 'text-slate-400 group-hover:text-brand-600',
                 )}
               />
-              {label}
+              {displayLabel}
             </button>
           )
         })}
+
+        {isCEO && onOpenStaffModal && (
+          <button
+            type="button"
+            onClick={onOpenStaffModal}
+            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-ink"
+            data-testid="nav-item-receptionists"
+          >
+            <Users className="h-5 w-5 text-slate-400 group-hover:text-brand-600" />
+            Receptionists
+          </button>
+        )}
       </nav>
 
       <div className="space-y-1 border-t border-line px-3 py-4">
-        <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink">
-          <Settings className="h-5 w-5 text-slate-400" /> Settings
-        </button>
-        <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink">
+        {isCEO && (
+          <button
+            onClick={() => onSelect('settings')}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink"
+          >
+            <Settings className="h-5 w-5 text-slate-400" /> Settings
+          </button>
+        )}
+        <button
+          onClick={() => onSelect('support')}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink"
+        >
           <LifeBuoy className="h-5 w-5 text-slate-400" /> Support
         </button>
         <button
@@ -72,31 +107,34 @@ function SidebarContent({
   )
 }
 
-/**
- * Left navigation. Two presentations from one component:
- *  • lg+  → a fixed rail always visible.
- *  • <lg  → a slide-over drawer driven by `mobileOpen` (toggled from the header).
- */
 export default function Sidebar({
   active,
   onSelect,
   mobileOpen,
   onClose,
   onSignOut,
+  session,
+  branches,
+  onOpenStaffModal,
 }: SidebarProps) {
   const handleSelect = (id: string) => {
     onSelect(id)
-    onClose() // auto-close the drawer after picking a section on mobile
+    onClose()
   }
 
   return (
     <>
-      {/* Desktop rail */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] border-r border-line bg-white lg:block">
-        <SidebarContent active={active} onSelect={onSelect} onSignOut={onSignOut} />
+        <SidebarContent
+          active={active}
+          onSelect={onSelect}
+          onSignOut={onSignOut}
+          session={session}
+          branches={branches}
+          onOpenStaffModal={onOpenStaffModal}
+        />
       </aside>
 
-      {/* Mobile slide-over */}
       <div
         className={cn(
           'fixed inset-0 z-50 lg:hidden',
@@ -126,7 +164,14 @@ export default function Sidebar({
           >
             <X className="h-5 w-5" />
           </button>
-          <SidebarContent active={active} onSelect={handleSelect} onSignOut={onSignOut} />
+          <SidebarContent
+            active={active}
+            onSelect={handleSelect}
+            onSignOut={onSignOut}
+            session={session}
+            branches={branches}
+            onOpenStaffModal={onOpenStaffModal}
+          />
         </div>
       </div>
     </>
