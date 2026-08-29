@@ -1,5 +1,16 @@
+export function getStoredAuthToken(): string {
+  if (typeof window === 'undefined') return ''
+
+  return (
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    sessionStorage.getItem('access_token') ||
+    ''
+  )
+}
+
 export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
-  const token = localStorage.getItem('token') || localStorage.getItem('access_token')
+  const token = getStoredAuthToken()
   const headers = new Headers(init?.headers as HeadersInit || {})
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
@@ -34,5 +45,10 @@ export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
     throw new Error(body.detail || body.message || `Request failed with status ${response.status}`)
   }
 
-  return response.json()
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return response.json()
+  }
+
+  return response.text()
 }

@@ -6,6 +6,8 @@ import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS } from '../../data/moc
 import type { RoomType } from '../../types'
 import CustomSelect from '../ui/CustomSelect'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
+
 interface PropertyOption {
   id: string
   title: string
@@ -65,30 +67,16 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
   const fetchHostProperties = async () => {
     setIsLoadingProperties(true)
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-      const res = await fetch('/api/v1/properties/mine', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      })
+      const data = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties/mine`)
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.detail || `Failed to fetch properties (Status ${res.status})`)
-      }
-
-      const data = await res.json()
-
-      // Robustly normalize property arrays across common API response wrappers
       const rawList = Array.isArray(data)
         ? data
         : data.properties || data.items || data.data || []
 
-      // Standardize string IDs and title/name fallbacks
       const items: PropertyOption[] = rawList.map((p: any) => ({
         id: String(p.id ?? p._id ?? ''),
-        title: p.title || p.name || p.property_name || `Property #${p.id}`,
-      }))
+        title: p.hotel_name || p.title || p.name || p.property_name || `Property #${p.id || p._id || 'unknown'}`,
+      })).filter((p) => p.id)
 
       setHostProperties(items)
 
@@ -102,19 +90,6 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
       setIsLoadingProperties(false)
     }
   }
-
-   // Lock background scroll when the modal is open
-  useEffect(() => {
-    if (open) {
-    document.body.style.overflow = 'hidden'
-  } else {
-    document.body.style.overflow = ''
-  }
-
-  return () => {
-    document.body.style.overflow = ''
-  }
-  }, [open])
 
   // Reset form upon opening
   useEffect(() => {
@@ -185,22 +160,23 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
         formData.append('images', file)
       })
 
-      const createdRoom = await fetchWithAuth('/api/v1/rooms/upload', {
+      const createdRoom = await fetchWithAuth(`${API_BASE_URL}/api/v1/rooms/upload`, {
         method: 'POST',
         body: formData,
       })
 
       const roomFormatted: RoomType = {
-        id: createdRoom.id,
-        title: createdRoom.title,
-        description: createdRoom.description,
-        price: createdRoom.price_per_night,
+        id: String(createdRoom.id || `room-${Date.now()}`),
+        title: createdRoom.title || createdRoom.name || title.trim() || 'Untitled Room',
+        description: createdRoom.description || description.trim() || 'No description provided.',
+        price: Number(createdRoom.price ?? createdRoom.price_per_night ?? rawPrice),
         currency: currency,
         inventory: Number(inventory) || 1,
-        capacity: capacity,
+        capacity: Number(capacity) || 2,
         amenities: amenities,
-        images: createdRoom.images,
-        status: 'active',
+        images: Array.isArray(createdRoom.images) ? createdRoom.images : [],
+        status: 'available',
+        propertyId: selectedPropertyId,
       }
 
       onSave(roomFormatted)
