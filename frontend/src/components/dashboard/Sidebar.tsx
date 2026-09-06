@@ -67,17 +67,6 @@ function SidebarContent({
           )
         })}
 
-        {isCEO && onOpenStaffModal && (
-          <button
-            type="button"
-            onClick={onOpenStaffModal}
-            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-ink"
-            data-testid="nav-item-receptionists"
-          >
-            <Users className="h-5 w-5 text-slate-400 group-hover:text-brand-600" />
-            Receptionists
-          </button>
-        )}
       </nav>
 
       <div className="space-y-1 border-t border-line px-3 py-4">

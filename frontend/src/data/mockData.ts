@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   CalendarCheck,
   Wallet,
+  Users,
   // amenity + category icons
   Bath,
   ShowerHead,
@@ -64,6 +65,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'rooms', label: 'Manage Rooms', icon: BedDouble },
   { id: 'bookings', label: 'Bookings', icon: CalendarCheck },
   { id: 'payouts', label: 'Payouts', icon: Wallet },
+  { id: 'receptionists', label: 'Receptionists', icon: Users },
 ]
 
 export const CHECK_INS: CheckIn[] = [

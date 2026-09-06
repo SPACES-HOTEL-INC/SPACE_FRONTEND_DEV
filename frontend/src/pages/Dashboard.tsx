@@ -6,6 +6,7 @@ import OverviewView from '../components/dashboard/OverviewView'
 import ManageRooms from '../components/dashboard/ManageRooms'
 import Bookings from '../components/dashboard/Bookings'
 import Payouts from '../components/dashboard/Payouts'
+import Receptionists from '../components/dashboard/Receptionists'
 import StaffModal from '../components/dashboard/StaffModal'
 import type { Session, Branch, StaffAccount } from '../types'
 
@@ -42,7 +43,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [branches, setBranches] = useState<Branch[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [, setStaffAccounts] = useState<StaffAccount[]>([])
+  const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([])
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -174,6 +175,12 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
           )}
           {activeNav === 'bookings' && <Bookings onNotify={notify} />}
           {activeNav === 'payouts' && <Payouts onNotify={notify} />}
+          {activeNav === 'receptionists' && (
+            <Receptionists
+              staffAccounts={staffAccounts}
+              onOpenStaffModal={() => setIsStaffModalOpen(true)}
+            />
+          )}
         </main>
       </div>
 
