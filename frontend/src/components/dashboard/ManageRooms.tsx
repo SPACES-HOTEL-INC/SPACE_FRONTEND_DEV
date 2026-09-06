@@ -283,6 +283,7 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
 
       <PropertyFormModal
         open={propertyModalOpen}
+        editingProperty={editingProperty}
         onClose={() => {
           setPropertyModalOpen(false)
           setEditingProperty(null)
