@@ -214,8 +214,8 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
                 ))}
               </div>
             </div>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
-              <MapPin className="h-4 w-4 text-slate-300" /> {activeProperty.address}
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+              <MapPin className="h-4 w-4 text-slate-400" /> {activeProperty.address}
             </p>
           </div>
 
