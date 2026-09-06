@@ -140,6 +140,8 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
       createdAt: new Date().toISOString(),
     }
     setStaffAccounts((prev) => [...prev, newStaff])
+    setIsStaffModalOpen(false)
+    setActiveNav('receptionists')
     notify(
       'Account Created',
       `Receptionist profile created for ${staffData.name} at ${selectedBranch?.name || 'assigned branch'}.`,
