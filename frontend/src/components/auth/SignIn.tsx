@@ -8,12 +8,13 @@ import type { Session } from '../../types'
 interface SignInProps {
   onAuthenticated: (session: Session) => void
   onNavigateSignup: () => void
+  onNavigateForgotPassword: () => void
 }
 
 // Adjust this URL if your login route uses OAuth2 (/api/v1/auth/token or /api/v1/auth/login)
 const API_LOGIN_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/login'
 
-export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProps) {
+export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateForgotPassword }: SignInProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -159,6 +160,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup }: SignInProp
           </label>
           <button
             type="button"
+            onClick={onNavigateForgotPassword}
             className="text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700"
             data-testid="forgot-password-link"
           >
