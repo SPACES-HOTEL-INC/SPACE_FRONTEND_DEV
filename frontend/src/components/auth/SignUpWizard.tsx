@@ -32,9 +32,9 @@ const INITIAL_DATA: RegistrationData & { email?: string; confirmPassword?: strin
   documentName: '',
 }
 
-/**
- * SignUpWizard — single-page business account registration with updated field ordering.
- */
+// Adjust this URL to match your environment variables or configuration
+const API_REGISTER_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/register'
+
 export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignUpWizardProps) {
   const [data, setData] = useState(INITIAL_DATA)
   const [showPassword, setShowPassword] = useState(false)
@@ -47,7 +47,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
     setData((prev) => ({ ...prev, ...patch }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validate password match
@@ -57,15 +57,51 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
     }
 
     setSubmitting(true)
+    setError('')
 
-    // Simulated account creation -> derive session from form data.
-    setTimeout(() => {
-      onAuthenticated({
-        hotelName: data.hotelName || 'Spaces Property',
-        merchantId: 'MER-' + Math.floor(1000 + Math.random() * 8999) + '-NEW',
-        email: data.email || `${data.firstName || 'owner'}@spaceshm.com`,
+    try {
+      // 1. Map frontend state to backend UserCreate schema
+      const payload = {
+        email: data.email?.trim(),
+        password: data.password,
+        full_name: `${data.firstName} ${data.lastName}`.trim(),
+        phone_number: data.mobile,
+        // Since this is a business account registration, you may want to set the role to 'host' 
+        // rather than the default 'consumer' depending on your backend logic.
+        role: 'host' 
+      }
+
+      // 2. Send authentication request to backend
+      const response = await fetch(API_REGISTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       })
-    }, 800)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        
+        // Handle the backend's validation error structure (422 Unprocessable Entity)
+        if (errorData.detail && Array.isArray(errorData.detail)) {
+           throw new Error(errorData.detail[0].msg || 'Validation Error')
+        }
+        
+        throw new Error(errorData.detail || errorData.message || 'Registration failed.')
+      }
+
+      // 3. Handle Successful Registration
+      // Because the /register endpoint returns the user object and NOT an access token, 
+      // the best practice is to navigate the user to the login screen to authenticate.
+      onNavigateLogin()
+
+    } catch (err: any) {
+      console.error('Registration error:', err)
+      setError(err.message || 'Unable to create account. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -78,7 +114,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
       </header>
 
       {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs font-semibold text-red-600">
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm font-semibold text-red-700">
           {error}
         </div>
       )}
