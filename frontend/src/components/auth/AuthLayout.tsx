@@ -21,9 +21,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <Brand />
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
+        <main role="main" className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   )
