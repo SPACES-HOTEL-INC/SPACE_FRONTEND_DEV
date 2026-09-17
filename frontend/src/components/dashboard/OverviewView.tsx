@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react'
+<<<<<<< HEAD
+=======
+import { Branch } from '../../types'
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 import { Home, Calendar, DollarSign, Activity, Loader2, AlertCircle } from 'lucide-react'
 
 // Adjust this to match your sign-in base URL
@@ -26,7 +30,15 @@ interface OverviewData {
   recentBookings: Booking[]
 }
 
+<<<<<<< HEAD
 export default function Overview() {
+=======
+interface Props {
+  branches?: Branch[]
+}
+
+export default function Overview({ branches }: Props) {
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
   const [data, setData] = useState<OverviewData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -51,6 +63,7 @@ export default function Overview() {
           'Authorization': `Bearer ${token}`
         }
 
+<<<<<<< HEAD
         // Fetch Properties and Bookings concurrently
         const [propertiesRes, bookingsRes] = await Promise.all([
           fetch(`${API_BASE_URL}/properties/mine`, { headers }),
@@ -66,6 +79,19 @@ export default function Overview() {
 
         // Calculate Overview Metrics
         const totalProperties = properties.length
+=======
+        // Only fetch bookings here; properties are supplied via `branches` prop
+        const bookingsRes = await fetch(`${API_BASE_URL}/bookings/host-bookings`, { headers })
+
+        if (!bookingsRes.ok) {
+          throw new Error('Failed to fetch bookings for dashboard. Please check your connection.')
+        }
+
+        const bookings: Booking[] = await bookingsRes.json()
+
+        // Calculate Overview Metrics
+        const totalProperties = (branches && Array.isArray(branches)) ? branches.length : 0
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
         
         // Active bookings (pending or confirmed)
         const activeBookings = bookings.filter(b => 

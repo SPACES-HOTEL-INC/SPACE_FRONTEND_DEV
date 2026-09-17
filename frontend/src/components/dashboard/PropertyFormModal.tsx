@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { X, UploadCloud, Check, Plus, Loader2, Building2 } from 'lucide-react'
 import { cn, labelClass, inputClass } from '../../lib/ui'
+<<<<<<< HEAD
 import { AMENITY_CATEGORIES } from '../../data/mockData'
 import type { Branch } from '../../types'
 
@@ -8,6 +9,37 @@ interface PropertyFormModalProps {
   open: boolean
   onClose: () => void
   onSave: (property: Branch) => void
+=======
+import { fetchWithAuth } from '../../lib/api'
+import { AMENITY_CATEGORIES } from '../../data/mockData'
+
+interface EditingProperty {
+  id: string
+  name: string
+  propertyType?: string
+  address?: string
+  city?: string
+  state?: string
+  country?: string
+  phone?: string
+  email?: string
+  description?: string
+  amenities?: string[]
+  starRating?: number
+}
+
+interface PropertyFormModalProps {
+  open: boolean
+  editingProperty?: EditingProperty | null
+  onClose: () => void
+  onSave: (property: {
+    id: string
+    name: string
+    propertyType: string
+    starRating: number
+    address: string
+  }) => void
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 }
 
 const MIN_IMAGES = 0
@@ -23,7 +55,13 @@ const PROPERTY_TYPES = [
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
+<<<<<<< HEAD
 export default function PropertyFormModal({ open, onClose, onSave }: PropertyFormModalProps) {
+=======
+export default function PropertyFormModal({ open, editingProperty, onClose, onSave }: PropertyFormModalProps) {
+  const isEditing = Boolean(editingProperty)
+
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
   const [name, setName] = useState('')
   const [propertyType, setPropertyType] = useState('Hotel')
   const [address, setAddress] = useState('')
@@ -55,6 +93,7 @@ useEffect(() => {
   }
 }, [open])
 
+<<<<<<< HEAD
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
@@ -69,12 +108,51 @@ useEffect(() => {
       setDescription('')
       setAmenities([])
       previewUrls.forEach((url) => URL.revokeObjectURL(url))
+=======
+  // Reset form when modal opens, or populate existing property values when editing.
+  useEffect(() => {
+    if (!open) return
+
+    if (editingProperty) {
+      setName(editingProperty.name || '')
+      setPropertyType(editingProperty.propertyType || 'Hotel')
+      setAddress(editingProperty.address || '')
+      setCity(editingProperty.city || '')
+      setState(editingProperty.state || '')
+      setCountry(editingProperty.country || 'Nigeria')
+      setPhone(editingProperty.phone || '')
+      setEmail(editingProperty.email || '')
+      setDescription(editingProperty.description || '')
+      setAmenities(editingProperty.amenities || [])
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       setFiles([])
       setPreviewUrls([])
       setIsSubmitting(false)
       setErrorMessage(null)
+<<<<<<< HEAD
     }
   }, [open])
+=======
+      return
+    }
+
+    setName('')
+    setPropertyType('Hotel')
+    setAddress('')
+    setCity('')
+    setState('')
+    setCountry('Nigeria')
+    setPhone('')
+    setEmail('')
+    setDescription('')
+    setAmenities([])
+    previewUrls.forEach((url) => URL.revokeObjectURL(url))
+    setFiles([])
+    setPreviewUrls([])
+    setIsSubmitting(false)
+    setErrorMessage(null)
+  }, [open, editingProperty])
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
@@ -125,6 +203,7 @@ useEffect(() => {
         formData.append('images', file)
       })
 
+<<<<<<< HEAD
       const token = localStorage.getItem('token') || localStorage.getItem('access_token')
 
       const response = await fetch(`${API_BASE_URL}/api/v1/properties`, {
@@ -156,6 +235,33 @@ useEffect(() => {
         roomTypesCount: createdProperty.room_types_count || 0,
         totalRooms: createdProperty.total_rooms || 0,
         occupiedRooms: 0,
+=======
+      if (isEditing && editingProperty) {
+        const updatedProperty = {
+          id: editingProperty.id,
+          name: name.trim(),
+          propertyType: propertyType,
+          starRating: editingProperty.starRating ?? 5,
+          address: address.trim(),
+        }
+
+        onSave(updatedProperty)
+        onClose()
+        return
+      }
+
+      const createdProperty = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      const formattedProperty = {
+        id: createdProperty.id || `prop_${Date.now()}`,
+        name: createdProperty.name || name,
+        propertyType: createdProperty.property_type || propertyType,
+        starRating: Number(createdProperty.avg_rating || createdProperty.star_rating || 5),
+        address: createdProperty.address || address,
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       }
 
       onSave(formattedProperty)
@@ -187,8 +293,17 @@ useEffect(() => {
               <Building2 className="h-5 w-5" />
             </div>
             <div>
+<<<<<<< HEAD
               <h3 className="text-lg font-extrabold tracking-tight text-ink">Add New Property Branch</h3>
               <p className="text-xs text-slate-500">Register a new hotel or apartment location</p>
+=======
+              <h3 className="text-lg font-extrabold tracking-tight text-ink">
+                {isEditing ? 'Edit Property Branch' : 'Add New Property Branch'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {isEditing ? 'Update your branch profile details' : 'Register a new hotel or apartment location'}
+              </p>
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
             </div>
           </div>
           <button
@@ -445,7 +560,11 @@ useEffect(() => {
             className="ml-auto flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-700 disabled:bg-slate-300"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+<<<<<<< HEAD
             Create Property Branch
+=======
+            {isEditing ? 'Save Branch Changes' : 'Create Property Branch'}
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
           </button>
         </div>
       </div>

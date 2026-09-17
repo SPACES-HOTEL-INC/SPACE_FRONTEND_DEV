@@ -43,6 +43,7 @@ export default function StaffModal({
     }
   }, [isOpen])
 
+<<<<<<< HEAD
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,22 +60,68 @@ export default function StaffModal({
     setName('')
     setEmail('')
     setPassword('')
+=======
+  useEffect(() => {
+    if (!isOpen) {
+      setName('')
+      setEmail('')
+      setPassword('')
+      setShowPassword(false)
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const handleClose = () => {
+    setName('')
+    setEmail('')
+    setPassword('')
+    setShowPassword(false)
+    onClose()
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const targetBranchId = selectedBranch || branches[0]?.id || ''
+
+    onCreateStaff({
+      name,
+      email,
+      pass: password,
+      branchId: targetBranchId,
+    })
+
+    setName('')
+    setEmail('')
+    setPassword('')
+    setShowPassword(false)
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
+<<<<<<< HEAD
       <div 
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
+=======
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+        onClick={handleClose}
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       />
 
       {/* Modal Box */}
       <div className="relative z-10 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-rise border border-slate-100">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h3 className="text-lg font-bold text-slate-900">Create Receptionist Profile</h3>
+<<<<<<< HEAD
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 transition-colors">
+=======
+          <button onClick={handleClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 transition-colors">
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
             <X className="h-5 w-5" />
           </button>
         </div>

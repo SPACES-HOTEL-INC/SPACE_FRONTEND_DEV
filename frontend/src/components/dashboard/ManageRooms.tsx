@@ -1,12 +1,23 @@
+<<<<<<< HEAD
 import { useState } from 'react'
 import { Plus, Users, Layers, BedDouble, ChevronRight, Building2, MapPin, Star, Edit3 } from 'lucide-react'
 import { AMENITY_MAP, ROOM_TYPES } from '../../data/mockData'
+=======
+import { useEffect, useState } from 'react'
+import { Plus, Users, Layers, BedDouble, ChevronRight, Building2, MapPin, Star, Edit3, Loader2 } from 'lucide-react'
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 import type { RoomType } from '../../types'
 import RoomFormPanel from './RoomFormPanel'
 import RoomImageCarousel from './RoomImageCarousel'
 import FacilitiesModal from './FacilitiesModal'
 import PropertyFormModal from './PropertyFormModal'
 import CustomSelect from '../ui/CustomSelect'
+<<<<<<< HEAD
+=======
+import { fetchWithAuth } from '../../lib/api'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 
 interface Property {
   id: string
@@ -24,6 +35,7 @@ const MAX_CARD_ICONS = 5
 
 export default function ManageRooms({ onNotify }: ManageRoomsProps) {
   // Properties Ecosystem State
+<<<<<<< HEAD
   const [properties, setProperties] = useState<Property[]>([
     {
       id: 'prop-1',
@@ -41,12 +53,110 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
   const [rooms, setRooms] = useState<(RoomType & { propertyId?: string })[]>(() =>
     ROOM_TYPES.map((r) => ({ ...r, propertyId: 'prop-1' }))
   )
+=======
+  const [properties, setProperties] = useState<Property[]>([])
+  const [activePropertyId, setActivePropertyId] = useState<string>('')
+  const [propertyModalOpen, setPropertyModalOpen] = useState(false)
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null)
+  const [isLoadingProperties, setIsLoadingProperties] = useState(false)
+  const [propertiesError, setPropertiesError] = useState<string | null>(null)
+
+  // Rooms State
+  const [rooms, setRooms] = useState<(RoomType & { propertyId?: string })[]>([])
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false)
+  const [roomsError, setRoomsError] = useState<string | null>(null)
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
   const [panelOpen, setPanelOpen] = useState(false)
   const [facilitiesRoom, setFacilitiesRoom] = useState<RoomType | null>(null)
 
   const activeProperty = properties.find((p) => p.id === activePropertyId) || properties[0]
   const activeRooms = rooms.filter((r) => r.propertyId === activePropertyId)
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    let isMounted = true
+
+    const loadProperties = async () => {
+      setIsLoadingProperties(true)
+      setPropertiesError(null)
+
+      try {
+        const data = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties/mine`)
+        const items = Array.isArray(data) ? data : data.properties || data.items || data.data || []
+        const nextProperties: Property[] = items.map((p: any) => ({
+          id: String(p.id ?? p._id ?? ''),
+          name: p.hotel_name || p.name || p.title || 'Untitled property',
+          propertyType: String(p.property_type || 'Hotel'),
+          starRating: Number(p.avg_rating || p.star_rating || 5),
+          address: p.address || 'No address provided',
+        })).filter((p) => p.id)
+
+        if (!isMounted) return
+        setProperties(nextProperties)
+        if (nextProperties.length > 0 && !activePropertyId) {
+          setActivePropertyId(nextProperties[0].id)
+        }
+      } catch (error: any) {
+        if (!isMounted) return
+        setPropertiesError(error.message || 'Could not load your properties.')
+      } finally {
+        if (isMounted) setIsLoadingProperties(false)
+      }
+    }
+
+    loadProperties()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!activePropertyId) {
+      setRooms([])
+      return
+    }
+
+    let isMounted = true
+
+    const loadRooms = async () => {
+      setIsLoadingRooms(true)
+      setRoomsError(null)
+
+      try {
+        const data = await fetchWithAuth(`${API_BASE_URL}/api/v1/rooms/?property_id=${encodeURIComponent(activePropertyId)}`)
+        const nextRooms = Array.isArray(data) ? data : data.rooms || data.items || data.data || []
+
+        if (!isMounted) return
+        setRooms(nextRooms.map((room: any, index: number) => ({
+          id: String(room.id ?? room._id ?? `room-${index}`),
+          title: room.title || room.name || 'Untitled Room',
+          description: room.description || 'No description available.',
+          price: Number(room.price ?? room.price_per_night ?? 0),
+          currency: room.currency || '₦',
+          inventory: Number(room.inventory ?? room.total_units ?? 1),
+          capacity: Number(room.capacity ?? 2),
+          amenities: Array.isArray(room.amenities) ? room.amenities : [],
+          images: Array.isArray(room.images) ? room.images.filter(Boolean) : [],
+          status: room.is_available === false ? 'maintenance' : 'available',
+          propertyId: String(room.property_id ?? activePropertyId),
+        })))
+      } catch (error: any) {
+        if (!isMounted) return
+        setRoomsError(error.message || 'Could not load rooms for this property.')
+        setRooms([])
+      } finally {
+        if (isMounted) setIsLoadingRooms(false)
+      }
+    }
+
+    loadRooms()
+    return () => {
+      isMounted = false
+    }
+  }, [activePropertyId])
+
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
   // Handle Upsert (Create or Edit)
   const handleSaveProperty = (savedProperty: Property) => {
     const exists = properties.some(p => p.id === savedProperty.id)
@@ -80,6 +190,7 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Property Branch:</span>
           <div className="flex items-center gap-2">
+<<<<<<< HEAD
             {/* Custom Styled Dropdown UI replaces native box menu */}
             <CustomSelect
               options={propertyOptions}
@@ -87,6 +198,24 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
               onChange={(val) => setActivePropertyId(val)}
               className="w-64"
             />
+=======
+            {isLoadingProperties ? (
+              <div className="flex h-14 w-64 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600" /> Loading properties...
+              </div>
+            ) : propertyOptions.length > 0 ? (
+              <CustomSelect
+                options={propertyOptions}
+                value={activePropertyId}
+                onChange={(val) => setActivePropertyId(val)}
+                className="w-64"
+              />
+            ) : (
+              <div className="flex h-14 w-64 items-center rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs text-amber-700">
+                No properties available.
+              </div>
+            )}
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 
             <button
               onClick={() => {
@@ -127,8 +256,13 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
                 ))}
               </div>
             </div>
+<<<<<<< HEAD
             <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
               <MapPin className="h-4 w-4 text-slate-300" /> {activeProperty.address}
+=======
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+              <MapPin className="h-4 w-4 text-slate-400" /> {activeProperty.address}
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
             </p>
           </div>
 
@@ -142,12 +276,37 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Grid rendering remains completely intact */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {activeRooms.map((room) => (
           <article key={room.id} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm hover:-translate-y-0.5 transition-all">
             <div className="relative">
               <RoomImageCarousel images={room.images} title={room.title} />
+=======
+      {propertiesError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-600">
+          {propertiesError}
+        </div>
+      )}
+
+      {roomsError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-600">
+          {roomsError}
+        </div>
+      )}
+
+      {/* Grid rendering remains completely intact */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {isLoadingRooms ? (
+          <div className="col-span-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-sm font-medium text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin text-brand-600" /> Loading room inventory...
+          </div>
+        ) : activeRooms.length > 0 ? activeRooms.map((room) => (
+          <article key={room.id} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm hover:-translate-y-0.5 transition-all">
+            <div className="relative">
+              <RoomImageCarousel images={room.images?.length ? room.images : ['https://images.unsplash.com/...']} title={room.title} testId={room.id} />
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
               <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700 backdrop-blur">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active
               </span>
@@ -170,8 +329,12 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
               )}
             </div>
           </article>
+<<<<<<< HEAD
         ))}
         {activeRooms.length === 0 && (
+=======
+        )) : (
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
           <div className="col-span-full grid place-items-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
             <BedDouble className="h-10 w-10 text-slate-300" />
             <p className="mt-3 text-sm font-semibold text-slate-800">No room types under {activeProperty?.name} yet</p>
@@ -181,12 +344,19 @@ export default function ManageRooms({ onNotify }: ManageRoomsProps) {
 
       <PropertyFormModal
         open={propertyModalOpen}
+<<<<<<< HEAD
+=======
+        editingProperty={editingProperty}
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
         onClose={() => {
           setPropertyModalOpen(false)
           setEditingProperty(null)
         }}
         onSave={handleSaveProperty}
+<<<<<<< HEAD
         propertyToEdit={editingProperty}
+=======
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       />
 
       <RoomFormPanel open={panelOpen} onClose={() => setPanelOpen(false)} onSave={handleSaveRoom} />

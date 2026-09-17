@@ -1,3 +1,5 @@
+export type Page = 'login' | 'signup' | 'forgot-password' | 'reset-password' | 'dashboard'
+
 // Role definition for access control
 export type UserRole = 'CEO' | 'RECEPTIONIST'
 

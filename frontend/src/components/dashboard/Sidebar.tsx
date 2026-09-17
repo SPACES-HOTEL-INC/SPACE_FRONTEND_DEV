@@ -67,6 +67,7 @@ function SidebarContent({
           )
         })}
 
+<<<<<<< HEAD
         {isCEO && onOpenStaffModal && (
           <button
             type="button"
@@ -78,6 +79,8 @@ function SidebarContent({
             Receptionists
           </button>
         )}
+=======
+>>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       </nav>
 
       <div className="space-y-1 border-t border-line px-3 py-4">
