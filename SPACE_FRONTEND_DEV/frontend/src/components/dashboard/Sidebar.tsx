@@ -67,43 +67,58 @@ function SidebarContent({
           )
         })}
 
-<<<<<<< HEAD
-        {isCEO && onOpenStaffModal && (
-          <button
-            type="button"
-            onClick={onOpenStaffModal}
-            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-ink"
-            data-testid="nav-item-receptionists"
-          >
-            <Users className="h-5 w-5 text-slate-400 group-hover:text-brand-600" />
-            Receptionists
-          </button>
-        )}
-=======
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       </nav>
 
       <div className="space-y-1 border-t border-line px-3 py-4">
         {isCEO && (
           <button
             onClick={() => onSelect('settings')}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink"
+            className={cn(
+              'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+              active === 'settings'
+                ? 'bg-brand-600 text-white shadow-[0_10px_20px_-10px_rgba(15,118,110,0.8)]'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
+            )}
+            data-testid="nav-item-settings"
           >
-            <Settings className="h-5 w-5 text-slate-400" /> Settings
+            <Settings
+              className={cn(
+                'h-5 w-5 transition-colors',
+                active === 'settings' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600',
+              )}
+            />
+            Settings
           </button>
         )}
         <button
           onClick={() => onSelect('support')}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink"
+          className={cn(
+            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+            active === 'support'
+              ? 'bg-brand-600 text-white shadow-[0_10px_20px_-10px_rgba(15,118,110,0.8)]'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
+          )}
+          data-testid="nav-item-support"
         >
-          <LifeBuoy className="h-5 w-5 text-slate-400" /> Support
+          <LifeBuoy
+            className={cn(
+              'h-5 w-5 transition-colors',
+              active === 'support' ? 'text-white' : 'text-slate-400 group-hover:text-brand-600',
+            )}
+          />
+          Support
         </button>
         <button
           onClick={onSignOut}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+          className={cn(
+            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+            active === 'sign-out'
+              ? 'bg-brand-600 text-white shadow-[0_10px_20px_-10px_rgba(15,118,110,0.8)]'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
+          )}
           data-testid="sign-out-button"
         >
-          <LogOut className="h-5 w-5" /> Sign out
+          <LogOut className="h-5 w-5 text-slate-400" /> Sign out
         </button>
       </div>
     </div>

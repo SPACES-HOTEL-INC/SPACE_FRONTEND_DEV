@@ -1,19 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { X, UploadCloud, Check, Plus, Loader2, Building2 } from 'lucide-react'
 import { cn, labelClass } from '../../lib/ui'
-<<<<<<< HEAD
-=======
 import { fetchWithAuth } from '../../lib/api'
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 import { AMENITY_CATEGORIES, CURRENCIES, CAPACITY_OPTIONS } from '../../data/mockData'
 import type { RoomType } from '../../types'
 import CustomSelect from '../ui/CustomSelect'
 
-<<<<<<< HEAD
-=======
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 interface PropertyOption {
   id: string
   title: string
@@ -73,24 +67,6 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
   const fetchHostProperties = async () => {
     setIsLoadingProperties(true)
     try {
-<<<<<<< HEAD
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-      const res = await fetch('/api/v1/properties/mine', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const items = Array.isArray(data) ? data : data.items || []
-        setHostProperties(items)
-        if (items.length > 0 && !selectedPropertyId) {
-          setSelectedPropertyId(items[0].id)
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load host properties:', err)
-=======
       const data = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties/mine`)
 
       const rawList = Array.isArray(data)
@@ -110,7 +86,6 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
     } catch (err: any) {
       console.error('Failed to load host properties:', err)
       setErrorMessage(err.message || 'Could not load your properties.')
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
     } finally {
       setIsLoadingProperties(false)
     }
@@ -119,12 +94,9 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
   // Reset form upon opening
   useEffect(() => {
     if (open) {
-<<<<<<< HEAD
-=======
       if (!propertyId) {
         setSelectedPropertyId('')
       }
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       setTitle('')
       setDescription('')
       setPrice('')
@@ -138,11 +110,7 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
       setIsSubmitting(false)
       setErrorMessage(null)
     }
-<<<<<<< HEAD
-  }, [open])
-=======
   }, [open, propertyId])
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
@@ -192,36 +160,6 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
         formData.append('images', file)
       })
 
-<<<<<<< HEAD
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token')
-
-      const response = await fetch('/api/v1/rooms/upload', {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.detail || 'Failed to upload room and images.')
-      }
-
-      const createdRoom = await response.json()
-
-      const roomFormatted: RoomType = {
-        id: createdRoom.id,
-        title: createdRoom.title,
-        description: createdRoom.description,
-        price: createdRoom.price_per_night,
-        currency: currency,
-        inventory: Number(inventory) || 1,
-        capacity: capacity,
-        amenities: amenities,
-        images: createdRoom.images,
-        status: 'active',
-=======
       const createdRoom = await fetchWithAuth(`${API_BASE_URL}/api/v1/rooms/upload`, {
         method: 'POST',
         body: formData,
@@ -239,7 +177,6 @@ export default function RoomFormPanel({ open, onClose, onSave, propertyId }: Roo
         images: Array.isArray(createdRoom.images) ? createdRoom.images : [],
         status: 'available',
         propertyId: selectedPropertyId,
->>>>>>> 56b13b4c38d7dd932e10dade3569466fe9cac98c
       }
 
       onSave(roomFormatted)

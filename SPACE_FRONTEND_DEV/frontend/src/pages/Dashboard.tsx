@@ -7,6 +7,8 @@ import ManageRooms from '../components/dashboard/ManageRooms'
 import Bookings from '../components/dashboard/Bookings'
 import Payouts from '../components/dashboard/Payouts'
 import Receptionists from '../components/dashboard/Receptionists'
+import SettingsView from '../components/dashboard/SettingsView'
+import SupportView from '../components/dashboard/SupportView'
 import StaffModal from '../components/dashboard/StaffModal'
 import type { Session, Branch, StaffAccount } from '../types'
 
@@ -183,6 +185,8 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
               onOpenStaffModal={() => setIsStaffModalOpen(true)}
             />
           )}
+          {activeNav === 'settings' && <SettingsView />}
+          {activeNav === 'support' && <SupportView />}
         </main>
       </div>
 
