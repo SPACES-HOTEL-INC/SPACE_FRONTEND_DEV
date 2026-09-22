@@ -6,23 +6,6 @@ import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import type { Page, Session } from './types'
 
-/**
- * App = the central state router.
- *
- * State flow overview
- * ────────────────────────────────────────────────────────────────────────
- *  • `page`    → single source of truth for which screen renders
- *               ('login' | 'signup' | 'dashboard').
- *  • `session` → the authenticated hotel context. It is `null` until an auth
- *               screen calls `handleAuthenticated`, at which point we store the
- *               session and flip `page` to 'dashboard'.
- *
- *  Login  ──onNavigateSignup──▶ Register
- *  Register ──onNavigateLogin──▶ Login
- *  Login/Register ──onAuthenticated(session)──▶ Dashboard
- *  Dashboard ──onSignOut──▶ Login (session cleared)
- * ────────────────────────────────────────────────────────────────────────
- */
 function App() {
   const [page, setPage] = useState<Page>('login')
   const [session, setSession] = useState<Session | null>(null)
@@ -49,7 +32,10 @@ function App() {
       )}
 
       {page === 'signup' && (
-        <Register onAuthenticated={handleAuthenticated} onNavigateLogin={() => setPage('login')} />
+        <Register 
+          onAuthenticated={handleAuthenticated} 
+          onNavigateLogin={() => setPage('login')} 
+        />
       )}
 
       {page === 'forgot-password' && (
@@ -76,6 +62,15 @@ function App() {
             setSession(null)
             setPage('login')
           }}
+        />
+      )}
+
+      {/* Fallback route if page is 'dashboard' but session is null */}
+      {page === 'dashboard' && !session && (
+        <Login
+          onAuthenticated={handleAuthenticated}
+          onNavigateSignup={() => setPage('signup')}
+          onNavigateForgotPassword={() => setPage('forgot-password')}
         />
       )}
     </div>

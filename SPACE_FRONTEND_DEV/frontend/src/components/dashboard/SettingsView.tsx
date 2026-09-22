@@ -11,59 +11,84 @@ import {
   Clock,
   Loader2,
   AlertCircle,
+  User,
 } from 'lucide-react'
-import { fetchWithAuth } from "../../lib/api";
+import { fetchWithAuth } from "../../lib/api"
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState<'details' | 'notifications' | 'security' | 'policies'>('details')
+  const [activeTab, setActiveTab] = useState<'profile' | 'details' | 'notifications' | 'security' | 'policies'>('profile')
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Hotel Details State
-  const [hotelName, setHotelName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [taxId, setTaxId] = useState('')
+  // Profile State
+  const [fullName, setFullName] = useState('')
+  const [userPhone, setUserPhone] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
 
-  // Notification Toggles State
-  const [notifyBookings, setNotifyBookings] = useState(true)
-  const [notifyPayouts, setNotifyPayouts] = useState(true)
-  const [notifyGuestRequests, setNotifyGuestRequests] = useState(true)
-  const [notifySystemUpdates, setNotifySystemUpdates] = useState(false)
+  // Hotel Business Details State
+  const [propertyName, setPropertyName] = useState('')
+  const [businessEmail, setBusinessEmail] = useState('')
+  const [supportPhone, setSupportPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [currency, setCurrency] = useState('NGN')
+  const [timezone, setTimezone] = useState('Africa/Lagos')
+
+  // Notification Preferences State
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [smsAlerts, setSmsAlerts] = useState(false)
+  const [bookingConfirmations, setBookingConfirmations] = useState(true)
+  const [payoutAlerts, setPayoutAlerts] = useState(true)
+  const [theme, setTheme] = useState('dark')
 
   // Security State
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [twoFactor, setTwoFactor] = useState(false)
 
-  // Policies State
+  // Check-In & Policies State
   const [checkInTime, setCheckInTime] = useState('14:00')
   const [checkOutTime, setCheckOutTime] = useState('11:00')
   const [cancellationPolicy, setCancellationPolicy] = useState('flexible')
 
-  // Load existing settings from Backend API
+  // Fetch initial settings from all backend endpoints
   useEffect(() => {
-    async function loadSettings() {
+    async function loadAllSettings() {
       try {
         setLoading(true)
-        const data = await fetchWithAuth('/api/v1/settings') // Adjust to your backend route
-        if (data) {
-          setHotelName(data.hotelName || '')
-          setEmail(data.email || '')
-          setPhone(data.phone || '')
-          setAddress(data.address || '')
-          setTaxId(data.taxId || '')
-          setNotifyBookings(data.notifyBookings ?? true)
-          setNotifyPayouts(data.notifyPayouts ?? true)
-          setNotifyGuestRequests(data.notifyGuestRequests ?? true)
-          setNotifySystemUpdates(data.notifySystemUpdates ?? false)
-          setCheckInTime(data.checkInTime || '14:00')
-          setCheckOutTime(data.checkOutTime || '11:00')
-          setCancellationPolicy(data.cancellationPolicy || 'flexible')
+        setErrorMessage(null)
+
+        const [profileRes, businessRes, prefRes] = await Promise.all([
+          fetchWithAuth('/api/v1/settings/profile').catch(() => null),
+          fetchWithAuth('/api/v1/settings/business').catch(() => null),
+          fetchWithAuth('/api/v1/settings/preferences').catch(() => null),
+        ])
+
+        if (profileRes && profileRes.ok) {
+          const profileData = await profileRes.json()
+          setFullName(profileData.fullName || profileData.full_name || '')
+          setUserPhone(profileData.phone || '')
+          setAvatarUrl(profileData.avatarUrl || profileData.avatar_url || '')
+        }
+
+        if (businessRes && businessRes.ok) {
+          const businessData = await businessRes.json()
+          setPropertyName(businessData.propertyName || businessData.property_name || '')
+          setBusinessEmail(businessData.businessEmail || businessData.business_email || '')
+          setSupportPhone(businessData.supportPhone || businessData.support_phone || '')
+          setAddress(businessData.address || '')
+          setCurrency(businessData.currency || 'NGN')
+          setTimezone(businessData.timezone || 'Africa/Lagos')
+        }
+
+        if (prefRes && prefRes.ok) {
+          const prefData = await prefRes.json()
+          setEmailNotifications(prefData.emailNotifications ?? prefData.email_notifications ?? true)
+          setSmsAlerts(prefData.smsAlerts ?? prefData.sms_alerts ?? false)
+          setBookingConfirmations(prefData.bookingConfirmations ?? prefData.booking_confirmations ?? true)
+          setPayoutAlerts(prefData.payoutAlerts ?? prefData.payout_alerts ?? true)
+          setTheme(prefData.theme || 'dark')
         }
       } catch (err: any) {
         setErrorMessage(err.message || 'Failed to load settings')
@@ -72,7 +97,7 @@ export default function SettingsView() {
       }
     }
 
-    loadSettings()
+    loadAllSettings()
   }, [])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -80,43 +105,55 @@ export default function SettingsView() {
     setSaving(true)
     setErrorMessage(null)
 
-    // Password validation for Security tab
-    if (activeTab === 'security' && newPassword) {
-      if (newPassword !== confirmPassword) {
-        setErrorMessage('New passwords do not match')
-        setSaving(false)
-        return
-      }
-    }
-
-    const payload = {
-      hotelName,
-      email,
-      phone,
-      address,
-      taxId,
-      notifyBookings,
-      notifyPayouts,
-      notifyGuestRequests,
-      notifySystemUpdates,
-      twoFactor,
-      checkInTime,
-      checkOutTime,
-      cancellationPolicy,
-      ...(currentPassword && newPassword ? { currentPassword, newPassword } : {}),
-    }
-
     try {
-      await fetchWithAuth('/api/v1/settings', {
+      let endpoint = ''
+      let payload = {}
+
+      if (activeTab === 'profile') {
+        endpoint = '/api/v1/settings/profile'
+        payload = { fullName, phone: userPhone, avatarUrl }
+      } else if (activeTab === 'details') {
+        endpoint = '/api/v1/settings/business'
+        payload = { propertyName, businessEmail, supportPhone, address, currency, timezone }
+      } else if (activeTab === 'notifications') {
+        endpoint = '/api/v1/settings/preferences'
+        payload = { emailNotifications, smsAlerts, bookingConfirmations, payoutAlerts, theme }
+      } else if (activeTab === 'security') {
+        if (!currentPassword || !newPassword) {
+          setErrorMessage('Please fill in both current and new passwords.')
+          setSaving(false)
+          return
+        }
+        if (newPassword !== confirmPassword) {
+          setErrorMessage('New passwords do not match.')
+          setSaving(false)
+          return
+        }
+        endpoint = '/api/v1/settings/security/password'
+        payload = { currentPassword, newPassword, confirmPassword }
+      } else if (activeTab === 'policies') {
+        // Fallback for custom policy tab if handled under business settings
+        endpoint = '/api/v1/settings/business'
+        payload = { checkInTime, checkOutTime, cancellationPolicy }
+      }
+
+      const res = await fetchWithAuth(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.detail || 'Failed to update settings')
+      }
+
       setSaved(true)
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
+      if (activeTab === 'security') {
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+      }
       setTimeout(() => setSaved(false), 3000)
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to update settings')
@@ -139,12 +176,23 @@ export default function SettingsView() {
       <div>
         <h1 className="text-2xl font-bold text-ink">Settings</h1>
         <p className="text-sm text-slate-500">
-          Manage your hotel manager account and platform configurations.
+          Manage your account details and platform configurations.
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex flex-wrap border-b border-slate-200 text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
+            activeTab === 'profile'
+              ? 'border-brand-600 text-brand-600 font-semibold'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <User className="h-4 w-4" /> Personal Profile
+        </button>
         <button
           type="button"
           onClick={() => setActiveTab('details')}
@@ -165,7 +213,7 @@ export default function SettingsView() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          <Bell className="h-4 w-4" /> Notifications
+          <Bell className="h-4 w-4" /> Preferences
         </button>
         <button
           type="button"
@@ -176,7 +224,7 @@ export default function SettingsView() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          <Lock className="h-4 w-4" /> Security & Access
+          <Lock className="h-4 w-4" /> Security & Password
         </button>
         <button
           type="button"
@@ -206,38 +254,20 @@ export default function SettingsView() {
         </div>
       )}
 
-      {/* Tab Content */}
+      {/* Tab Content Form */}
       <form onSubmit={handleSave} className="max-w-3xl space-y-6">
-        {activeTab === 'details' && (
+        {/* Personal Profile Tab */}
+        {activeTab === 'profile' && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-semibold text-ink">Property Profile</h2>
+            <h2 className="text-base font-semibold text-ink">Personal Information</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Hotel Name</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Full Name</label>
                 <input
                   type="text"
-                  value={hotelName}
-                  onChange={(e) => setHotelName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Merchant ID</label>
-                <input
-                  type="text"
-                  disabled
-                  value="MER-4820-GR"
-                  className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2 text-sm text-slate-400 cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Contact Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Abubakar Samuel"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
@@ -246,8 +276,72 @@ export default function SettingsView() {
                 <label className="mb-1 block text-xs font-medium text-slate-600">Phone Number</label>
                 <input
                   type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={userPhone}
+                  onChange={(e) => setUserPhone(e.target.value)}
+                  placeholder="e.g. +2348059780405"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-slate-600">Avatar Image URL</label>
+                <input
+                  type="text"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/avatar.jpg"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hotel Details Tab */}
+        {activeTab === 'details' && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <h2 className="text-base font-semibold text-ink">Property & Business Settings</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Property Name</label>
+                <input
+                  type="text"
+                  value={propertyName}
+                  onChange={(e) => setPropertyName(e.target.value)}
+                  placeholder="Spaces Hotel & Suites"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Business Email</label>
+                <input
+                  type="email"
+                  value={businessEmail}
+                  onChange={(e) => setBusinessEmail(e.target.value)}
+                  placeholder="contact@spaceshm.com"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Support Phone</label>
+                <input
+                  type="text"
+                  value={supportPhone}
+                  onChange={(e) => setSupportPhone(e.target.value)}
+                  placeholder="+2348059780405"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Currency</label>
+                <input
+                  type="text"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  placeholder="NGN"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
@@ -258,77 +352,78 @@ export default function SettingsView() {
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Hospitality Way, Abuja, Nigeria"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Corporate / Tax ID Number</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Timezone</label>
                 <input
                   type="text"
-                  value={taxId}
-                  onChange={(e) => setTaxId(e.target.value)}
-                  placeholder="e.g. TIN-994820-GR"
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  placeholder="Africa/Lagos"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
-                <p className="mt-1 text-xs text-slate-400">Required to enable full withdrawal access on payouts.</p>
               </div>
             </div>
           </div>
         )}
 
+        {/* Notifications & Preferences Tab */}
         {activeTab === 'notifications' && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-semibold text-ink">Notification Preferences</h2>
+            <h2 className="text-base font-semibold text-ink">Preferences & Alerts</h2>
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-ink">New Booking Alerts</p>
-                  <p className="text-xs text-slate-500">Get notified whenever a new room reservation is created.</p>
+                  <p className="text-sm font-medium text-ink">Email Notifications</p>
+                  <p className="text-xs text-slate-500">Receive general platform updates and summaries via email.</p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={notifyBookings}
-                  onChange={(e) => setNotifyBookings(e.target.checked)}
+                  checked={emailNotifications}
+                  onChange={(e) => setEmailNotifications(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                 />
               </div>
 
               <div className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-ink">Guest Requests & Messages</p>
-                  <p className="text-xs text-slate-500">Receive alerts when guests send inquiries or special requests.</p>
+                  <p className="text-sm font-medium text-ink">SMS Alerts</p>
+                  <p className="text-xs text-slate-500">Get instant text alerts for urgent guest requests or system errors.</p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={notifyGuestRequests}
-                  onChange={(e) => setNotifyGuestRequests(e.target.checked)}
+                  checked={smsAlerts}
+                  onChange={(e) => setSmsAlerts(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                 />
               </div>
 
               <div className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-ink">Payout Notifications</p>
-                  <p className="text-xs text-slate-500">Receive confirmation emails when bank settlements are processed.</p>
+                  <p className="text-sm font-medium text-ink">Booking Confirmations</p>
+                  <p className="text-xs text-slate-500">Receive immediate notifications when new reservations are created.</p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={notifyPayouts}
-                  onChange={(e) => setNotifyPayouts(e.target.checked)}
+                  checked={bookingConfirmations}
+                  onChange={(e) => setBookingConfirmations(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                 />
               </div>
 
               <div className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm font-medium text-ink">Platform Updates & Announcements</p>
-                  <p className="text-xs text-slate-500">Get product news, feature releases, and system maintenance alerts.</p>
+                  <p className="text-sm font-medium text-ink">Payout Alerts</p>
+                  <p className="text-xs text-slate-500">Get notified when weekly settlements are processed.</p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={notifySystemUpdates}
-                  onChange={(e) => setNotifySystemUpdates(e.target.checked)}
+                  checked={payoutAlerts}
+                  onChange={(e) => setPayoutAlerts(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                 />
               </div>
@@ -336,6 +431,7 @@ export default function SettingsView() {
           </div>
         )}
 
+        {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
@@ -377,29 +473,10 @@ export default function SettingsView() {
                 </div>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">Two-Factor Authentication (2FA)</p>
-                    <p className="text-xs text-slate-500">Require an authenticator app code during account sign in.</p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={twoFactor}
-                  onChange={(e) => setTwoFactor(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-                />
-              </div>
-            </div>
           </div>
         )}
 
+        {/* Policies Tab */}
         {activeTab === 'policies' && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
