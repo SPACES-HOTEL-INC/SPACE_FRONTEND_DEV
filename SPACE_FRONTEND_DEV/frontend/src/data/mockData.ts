@@ -7,7 +7,6 @@ import {
   CalendarCheck,
   Wallet,
   Users,
-  // amenity + category icons
   Bath,
   ShowerHead,
   Wind,
@@ -45,9 +44,6 @@ import type {
   TimelineRow,
 } from '../types'
 
-// Static mock data so the UI compiles and runs fully on the front-end.
-// Swap these for real API responses once the backend is wired up.
-
 export const DEMO_SESSION: Session = {
   hotelName: 'Grand Regent Hotel',
   merchantId: 'MER-4820-GR',
@@ -79,8 +75,6 @@ export const CHECK_INS: CheckIn[] = [
 export const PROPERTY_TYPES = ['Hotel', 'Resort', 'Boutique Hotel', 'Serviced Apartment', 'Villa / Estate', 'Guest House', 'Hostel']
 export const STAR_RATINGS = ['5 Star', '4 Star', '3 Star', '2 Star', '1 Star']
 
-// ── Manage Rooms ───────────────────────────────────────────────────────────
-// Currency is strictly limited to USD ($) and NGN (₦).
 export const CURRENCIES = [
   { code: 'USD', symbol: '$' },
   { code: 'NGN', symbol: '₦' },
@@ -88,7 +82,6 @@ export const CURRENCIES = [
 
 export const CAPACITY_OPTIONS = ['1', '2', '3', '4+']
 
-// Amenities organised into logical, categorised checklists.
 export const AMENITY_CATEGORIES: AmenityCategory[] = [
   {
     id: 'bathroom',
@@ -148,7 +141,6 @@ export const AMENITY_CATEGORIES: AmenityCategory[] = [
   },
 ]
 
-// Flat lookup: amenity id -> { label, icon, categoryId, categoryLabel }.
 export const AMENITY_MAP: Record<
   string,
   { label: string; icon: LucideIcon; categoryId: string; categoryLabel: string }
@@ -158,7 +150,6 @@ export const AMENITY_MAP: Record<
   ),
 )
 
-// Pool of "mock uploaded" images used by the room image matrix + card covers.
 export const ROOM_IMAGE_POOL = [
   'https://images.unsplash.com/photo-1515362778563-6a8d0e44bc0b?crop=entropy&cs=srgb&fm=jpg&q=80&w=900',
   'https://images.unsplash.com/photo-1631049307290-bb947b114627?crop=entropy&cs=srgb&fm=jpg&q=80&w=900',
@@ -233,7 +224,6 @@ export const ROOM_TYPES: RoomType[] = [
   },
 ]
 
-// ── Bookings ───────────────────────────────────────────────────────────────
 export const BOOKING_STATUSES: Booking['status'][] = ['Pending', 'Confirmed', 'Checked-In', 'Completed', 'Cancelled']
 
 export const BOOKINGS: Booking[] = [
@@ -249,7 +239,6 @@ export const BOOKINGS: Booking[] = [
   { id: 'bk-1010', guest: 'Liam Murphy', initials: 'LM', roomType: 'Garden Villa', checkIn: 'Jun 25, 2026', checkOut: 'Jun 30, 2026', nights: 5, amount: 4900, status: 'Pending', specialRequest: 'Twin beds instead of a king; extra towels.' },
 ]
 
-// Days + booked-duration blocks for the Bookings visual timeline.
 export const TIMELINE_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export const BOOKING_TIMELINE: TimelineRow[] = [
@@ -278,8 +267,6 @@ export const BOOKING_TIMELINE: TimelineRow[] = [
   },
 ]
 
-// ── Payouts ────────────────────────────────────────────────────────────────
-// Available Balance = TotalIncome - (PlatformFee + PendingClearance + Withdrawn)
 export const PAYOUT_FINANCE: PayoutFinance = {
   totalIncome: 128450,
   platformFee: 9633.75,
@@ -298,8 +285,6 @@ export const BANK_OPTIONS = [
   'Kuda Bank',
 ]
 
-// USD -> NGN conversion rate used across the dual-currency payouts view.
-// (base available $41,996.25 * 1500 = ₦62,994,375)
 export const NGN_RATE = 1500
 
 export const PAYOUT_HISTORY: PayoutRecord[] = [
