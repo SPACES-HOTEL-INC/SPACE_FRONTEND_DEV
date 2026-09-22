@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Building2,
   Bell,
@@ -9,18 +9,24 @@ import {
   Shield,
   KeyRound,
   Clock,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
+import { fetchWithAuth } from "../../lib/api";
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = useState<'details' | 'notifications' | 'security' | 'policies'>('details')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Hotel Details State
-  const [hotelName, setHotelName] = useState('Grand Regent Hotel')
-  const [email, setEmail] = useState('admin@grandregent.com')
-  const [phone, setPhone] = useState('+234 801 234 5678')
-  const [address, setAddress] = useState('123 Victoria Island, Lagos, Nigeria')
-  const [taxId, setTaxId] = useState('TIN-994820-GR')
+  const [hotelName, setHotelName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [taxId, setTaxId] = useState('')
 
   // Notification Toggles State
   const [notifyBookings, setNotifyBookings] = useState(true)
@@ -39,10 +45,92 @@ export default function SettingsView() {
   const [checkOutTime, setCheckOutTime] = useState('11:00')
   const [cancellationPolicy, setCancellationPolicy] = useState('flexible')
 
-  const handleSave = (e: React.FormEvent) => {
+  // Load existing settings from Backend API
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        setLoading(true)
+        const data = await fetchWithAuth('/api/v1/settings') // Adjust to your backend route
+        if (data) {
+          setHotelName(data.hotelName || '')
+          setEmail(data.email || '')
+          setPhone(data.phone || '')
+          setAddress(data.address || '')
+          setTaxId(data.taxId || '')
+          setNotifyBookings(data.notifyBookings ?? true)
+          setNotifyPayouts(data.notifyPayouts ?? true)
+          setNotifyGuestRequests(data.notifyGuestRequests ?? true)
+          setNotifySystemUpdates(data.notifySystemUpdates ?? false)
+          setCheckInTime(data.checkInTime || '14:00')
+          setCheckOutTime(data.checkOutTime || '11:00')
+          setCancellationPolicy(data.cancellationPolicy || 'flexible')
+        }
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Failed to load settings')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaving(true)
+    setErrorMessage(null)
+
+    // Password validation for Security tab
+    if (activeTab === 'security' && newPassword) {
+      if (newPassword !== confirmPassword) {
+        setErrorMessage('New passwords do not match')
+        setSaving(false)
+        return
+      }
+    }
+
+    const payload = {
+      hotelName,
+      email,
+      phone,
+      address,
+      taxId,
+      notifyBookings,
+      notifyPayouts,
+      notifyGuestRequests,
+      notifySystemUpdates,
+      twoFactor,
+      checkInTime,
+      checkOutTime,
+      cancellationPolicy,
+      ...(currentPassword && newPassword ? { currentPassword, newPassword } : {}),
+    }
+
+    try {
+      await fetchWithAuth('/api/v1/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      setSaved(true)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+      </div>
+    )
   }
 
   return (
@@ -58,6 +146,7 @@ export default function SettingsView() {
       {/* Tabs */}
       <div className="flex flex-wrap border-b border-slate-200 text-sm font-medium">
         <button
+          type="button"
           onClick={() => setActiveTab('details')}
           className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
             activeTab === 'details'
@@ -68,6 +157,7 @@ export default function SettingsView() {
           <Building2 className="h-4 w-4" /> Hotel Details
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('notifications')}
           className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
             activeTab === 'notifications'
@@ -78,6 +168,7 @@ export default function SettingsView() {
           <Bell className="h-4 w-4" /> Notifications
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('security')}
           className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
             activeTab === 'security'
@@ -88,6 +179,7 @@ export default function SettingsView() {
           <Lock className="h-4 w-4" /> Security & Access
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('policies')}
           className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
             activeTab === 'policies'
@@ -99,11 +191,18 @@ export default function SettingsView() {
         </button>
       </div>
 
-      {/* Alert Banner */}
+      {/* Alert Banners */}
       {saved && (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
           <CheckCircle2 className="h-5 w-5 text-emerald-600" />
           Settings updated successfully!
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          <AlertCircle className="h-5 w-5 text-red-600" />
+          {errorMessage}
         </div>
       )}
 
@@ -346,9 +445,11 @@ export default function SettingsView() {
         {/* Submit Button */}
         <button
           type="submit"
-          className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+          disabled={saving}
+          className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
         >
-          <Save className="h-4 w-4" /> Save Changes
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   LifeBuoy,
   Mail,
@@ -9,40 +9,66 @@ import {
   ChevronUp,
   HelpCircle,
   Clock,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
-
-interface Ticket {
-  id: string
-  subject: string
-  date: string
-  status: 'Open' | 'In Progress' | 'Resolved'
-}
+import { fetchSupportTickets, createSupportTicket, SupportTicket } from '../../lib/api'
 
 export default function SupportView() {
   const [submitted, setSubmitted] = useState(false)
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [loadingTickets, setLoadingTickets] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Demo Ticket History
-  const [tickets, setTickets] = useState<Ticket[]>([
-    { id: 'TKT-1082', subject: 'Payout delay for May 28', date: 'May 29, 2026', status: 'Resolved' },
-    { id: 'TKT-1049', subject: 'Updating room pricing currency', date: 'Apr 12, 2026', status: 'Resolved' },
-  ])
+  // Fetch ticket history on mount
+  useEffect(() => {
+    async function loadTickets() {
+      try {
+        setLoadingTickets(true)
+        const response = await fetchSupportTickets()
+        if (Array.isArray(response)) {
+          setTickets(response)
+        }
+      } catch (err: any) {
+        console.error('Failed to load tickets:', err.message)
+      } finally {
+        setLoadingTickets(false)
+      }
+    }
 
-  const handleSubmit = (e: React.FormEvent) => {
+    loadTickets()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!subject || !message) return
 
-    const newTicket: Ticket = {
-      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-      subject: subject,
-      date: 'Just now',
-      status: 'Open',
-    }
+    setSubmitting(true)
+    setErrorMessage(null)
 
-    setTickets([newTicket, ...tickets])
-    setSubmitted(true)
+    try {
+      const response = await createSupportTicket({ subject, message })
+
+      // Construct ticket item from response or fallback
+      const newTicket: SupportTicket = {
+        id: response?.id || `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+        subject: response?.subject || subject,
+        date: response?.date || 'Just now',
+        status: response?.status || 'Open',
+      }
+
+      setTickets((prev) => [newTicket, ...prev])
+      setSubmitted(true)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to submit support ticket.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const faqs = [
@@ -106,6 +132,13 @@ export default function SupportView() {
             <LifeBuoy className="h-5 w-5 text-brand-600" /> Submit a Support Ticket
           </h2>
 
+          {errorMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800">
+              <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+              {errorMessage}
+            </div>
+          )}
+
           {submitted ? (
             <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
               <div className="flex items-center gap-2">
@@ -113,7 +146,7 @@ export default function SupportView() {
                 <p className="text-sm font-semibold">Ticket Received!</p>
               </div>
               <p className="text-xs text-emerald-700">
-                Our team has logged your issue and added it to your ticket history below. We will inspect it and contact you shortly.
+                Our team has logged your issue and added it to your ticket history. We will inspect it and contact you shortly.
               </p>
               <button
                 onClick={() => {
@@ -158,9 +191,11 @@ export default function SupportView() {
 
               <button
                 type="submit"
-                className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+                disabled={submitting}
+                className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
               >
-                <Send className="h-4 w-4" /> Submit Ticket
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {submitting ? 'Submitting...' : 'Submit Ticket'}
               </button>
             </form>
           )}
@@ -171,26 +206,35 @@ export default function SupportView() {
           <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
             <Clock className="h-5 w-5 text-brand-600" /> Ticket History
           </h2>
-          <div className="space-y-3">
-            {tickets.map((t) => (
-              <div key={t.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-xs space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-semibold text-slate-500">{t.id}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-medium ${
-                      t.status === 'Open'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {t.status}
-                  </span>
+          
+          {loadingTickets ? (
+            <div className="flex py-6 justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
+            </div>
+          ) : tickets.length === 0 ? (
+            <p className="text-xs text-slate-400">No support tickets submitted yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {tickets.map((t) => (
+                <div key={t.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-semibold text-slate-500">{t.id}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-medium ${
+                        t.status === 'Open'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {t.status}
+                    </span>
+                  </div>
+                  <p className="font-medium text-ink truncate">{t.subject}</p>
+                  <p className="text-slate-400">{t.date}</p>
                 </div>
-                <p className="font-medium text-ink truncate">{t.subject}</p>
-                <p className="text-slate-400">{t.date}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -52,3 +52,38 @@ export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
 
   return response.text()
 }
+
+// Define support types if not already present in types.ts
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  date: string;
+  status: 'Open' | 'In Progress' | 'Resolved' | string;
+  message?: string;
+}
+
+export interface CreateTicketPayload {
+  subject: string;
+  message: string;
+}
+
+// GET: Fetch user support tickets
+export async function fetchSupportTickets(): Promise<SupportTicket[]> {
+  // fetchWithAuth already checks response.ok and returns parsed JSON
+  const data = await fetchWithAuth('/api/v1/support/tickets');
+  return data;
+}
+
+// POST: Create a new support ticket
+export async function createSupportTicket(payload: CreateTicketPayload): Promise<SupportTicket> {
+  // fetchWithAuth automatically stringifies error responses or returns parsed JSON
+  const data = await fetchWithAuth('/api/v1/support/tickets', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return data;
+}
