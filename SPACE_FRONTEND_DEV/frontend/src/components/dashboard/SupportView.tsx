@@ -162,10 +162,11 @@ export default function SupportView() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="support-subject" className="mb-1 block text-xs font-medium text-slate-600">
                   Subject
                 </label>
                 <input
+                  id="support-subject"
                   type="text"
                   required
                   value={subject}
@@ -176,10 +177,11 @@ export default function SupportView() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="support-message" className="mb-1 block text-xs font-medium text-slate-600">
                   Message
                 </label>
                 <textarea
+                  id="support-message"
                   required
                   rows={4}
                   value={message}

@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../lib/api'
 import type { Session } from '../../types'
 
 interface SignInProps {
-  onAuthenticated: (session: Session) => void
+  onAuthenticated: (session: Session, remember: boolean) => void
   onNavigateSignup: () => void
   onNavigateForgotPassword: () => void
 }
@@ -20,12 +20,9 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Form validity check: email and password must be non-empty
-  const isFormValid = email.trim().length > 0 && password.trim().length > 0
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isFormValid || loading) return
+    if (loading) return
 
     setLoading(true)
     setErrorMessage(null)
@@ -69,7 +66,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
         userId: data.id || data.user?.id || DEMO_SESSION.userId,
         merchantId: data.id || DEMO_SESSION.merchantId,
         hotelName: data.full_name ? `${data.full_name}'s Property` : DEMO_SESSION.hotelName,
-      })
+      }, remember)
     } catch (err: any) {
       console.error('Login error:', err)
       setErrorMessage(err.message || 'Unable to sign in. Please try again.')
@@ -160,8 +157,8 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
 
         <button
           type="submit"
-          disabled={loading || !isFormValid}
-          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 hover:shadow-[0_14px_30px_-10px_rgba(15,118,110,0.9)] focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:py-3.5 sm:text-[15px]"
+          disabled={loading}
+          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 hover:shadow-[0_14px_30px_-10px_rgba(15,118,110,0.9)] focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-wait disabled:opacity-80 sm:py-3.5 sm:text-[15px]"
           data-testid="enter-console-button"
         >
           {loading ? (

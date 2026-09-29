@@ -3,7 +3,7 @@ import SignIn from '../components/auth/SignIn'
 import type { Session } from '../types'
 
 interface LoginProps {
-  onAuthenticated: (session: Session) => void
+  onAuthenticated: (session: Session, remember?: boolean) => void
   onNavigateSignup: () => void
   onNavigateForgotPassword: () => void
 }

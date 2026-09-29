@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  ArrowLeft,
 } from 'lucide-react'
 import FormField from './FormField'
 import { inputClass } from '../../lib/ui'
@@ -32,7 +33,6 @@ const INITIAL_DATA: RegistrationData & { email?: string; confirmPassword?: strin
   documentName: '',
 }
 
-// Adjust this URL to match your environment variables or configuration
 const API_REGISTER_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/register'
 
 export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignUpWizardProps) {
@@ -47,10 +47,19 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
     setData((prev) => ({ ...prev, ...patch }))
   }
 
+  const handleGoBack = () => {
+    if (onNavigateLogin) {
+      onNavigateLogin()
+    } else if (window.history.length > 1) {
+      window.history.back()
+    } else {
+      window.location.href = '/'
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate password match
     if (data.password !== data.confirmPassword) {
       setError('Passwords do not match. Please check and try again.')
       return
@@ -60,18 +69,14 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
     setError('')
 
     try {
-      // 1. Map frontend state to backend UserCreate schema
       const payload = {
         email: data.email?.trim(),
         password: data.password,
         full_name: `${data.firstName} ${data.lastName}`.trim(),
         phone_number: data.mobile,
-        // Since this is a business account registration, you may want to set the role to 'host' 
-        // rather than the default 'consumer' depending on your backend logic.
         role: 'host' 
       }
 
-      // 2. Send authentication request to backend
       const response = await fetch(API_REGISTER_URL, {
         method: 'POST',
         headers: {
@@ -83,7 +88,6 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         
-        // Handle the backend's validation error structure (422 Unprocessable Entity)
         if (errorData.detail && Array.isArray(errorData.detail)) {
            throw new Error(errorData.detail[0].msg || 'Validation Error')
         }
@@ -91,9 +95,6 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
         throw new Error(errorData.detail || errorData.message || 'Registration failed.')
       }
 
-      // 3. Handle Successful Registration
-      // Because the /register endpoint returns the user object and NOT an access token, 
-      // the best practice is to navigate the user to the login screen to authenticate.
       onNavigateLogin()
 
     } catch (err: any) {
@@ -106,6 +107,19 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
 
   return (
     <div className="w-full max-w-lg animate-rise" data-testid="signup-wizard">
+      {/* Back Navigation Button styled with Brand Color */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 focus:outline-none"
+          data-testid="signup-back-button"
+        >
+          <ArrowLeft className="h-4 w-4 stroke-[2.5]" />
+          <span>Back</span>
+        </button>
+      </div>
+
       <header className="mb-7">
         <h2 className="text-3xl font-extrabold tracking-tight text-ink">Create your business account</h2>
         <p className="mt-2 text-[15px] text-slate-500">

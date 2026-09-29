@@ -177,7 +177,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-canvas">
+    <div className="flex h-screen w-screen overflow-hidden bg-canvas">
       <Sidebar
         active={activeNav}
         onSelect={handleNavSelect}
@@ -196,7 +196,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
           onOpenMenu={() => setMenuOpen(true)}
         />
 
-        <main className="mx-auto min-h-0 w-full max-w-7xl flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="mx-auto h-full w-full flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-16">
           {activeNav === 'overview' && (
             <OverviewView session={updatedSession} branches={branches} onNotify={notify} />
           )}
