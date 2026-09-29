@@ -82,8 +82,8 @@ export default function Bookings({ onNotify }: BookingsProps) {
           status === 'All' || (String(r.status || '').toLowerCase() === String(status).toLowerCase())
         return guest.includes(q) && statusMatches
       })
-      ),
-    [rows, query, status],
+    }, // <-- The missing '}' was added here
+    [rows, query, status]
   )
 
   const setRowStatus = (id: string, next: BookingStatus) =>
