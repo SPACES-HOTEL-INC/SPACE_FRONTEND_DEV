@@ -22,7 +22,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas font-sans text-ink antialiased">
+    <div className="h-screen h-[100dvh] w-screen overflow-hidden bg-canvas font-sans text-ink antialiased">
       {page === 'login' && (
         <Login
           onAuthenticated={handleAuthenticated}

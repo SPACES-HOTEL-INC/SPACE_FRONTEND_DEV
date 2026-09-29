@@ -12,6 +12,8 @@ import {
   Loader2,
   AlertCircle,
   User,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { fetchWithAuth } from "../../lib/api"
 
@@ -25,7 +27,6 @@ export default function SettingsView() {
   // Profile State
   const [fullName, setFullName] = useState('')
   const [userPhone, setUserPhone] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
 
   // Hotel Business Details State
   const [propertyName, setPropertyName] = useState('')
@@ -46,6 +47,9 @@ export default function SettingsView() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Check-In & Policies State
   const [checkInTime, setCheckInTime] = useState('14:00')
@@ -69,7 +73,6 @@ export default function SettingsView() {
           const profileData = await profileRes.json()
           setFullName(profileData.fullName || profileData.full_name || '')
           setUserPhone(profileData.phone || '')
-          setAvatarUrl(profileData.avatarUrl || profileData.avatar_url || '')
         }
 
         if (businessRes && businessRes.ok) {
@@ -111,7 +114,7 @@ export default function SettingsView() {
 
       if (activeTab === 'profile') {
         endpoint = '/api/v1/settings/profile'
-        payload = { fullName, phone: userPhone, avatarUrl }
+        payload = { fullName, phone: userPhone }
       } else if (activeTab === 'details') {
         endpoint = '/api/v1/settings/business'
         payload = { propertyName, businessEmail, supportPhone, address, currency, timezone }
@@ -282,17 +285,6 @@ export default function SettingsView() {
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Avatar Image URL</label>
-                <input
-                  type="text"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
             </div>
           </div>
         )}
@@ -441,34 +433,70 @@ export default function SettingsView() {
               <div className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password"
+                      autoComplete="current-password"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 pr-11 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((visible) => !visible)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
+                      aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                      title={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">New Password</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 pr-11 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((visible) => !visible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
+                        aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                        title={showNewPassword ? 'Hide new password' : 'Show new password'}
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 pr-11 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((visible) => !visible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
+                        aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
+                        title={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

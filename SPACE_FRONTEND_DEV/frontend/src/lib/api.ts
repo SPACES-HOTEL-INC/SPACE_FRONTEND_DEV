@@ -9,12 +9,22 @@ export function getStoredAuthToken(): string {
   )
 }
 
-export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
+// Ensure API base URL points to the Render backend environment
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'https://backend-nq9s.onrender.com'
+
+export async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
   const token = getStoredAuthToken()
   const headers = new Headers(init?.headers as HeadersInit || {})
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(input, { ...(init || {}), headers })
+  // Prepend API_BASE_URL if input is a relative path starting with '/'
+  let url = input
+  if (typeof input === 'string' && input.startsWith('/')) {
+    url = `${API_BASE_URL}${input}`
+  }
+
+  const response = await fetch(url, { ...(init || {}), headers })
 
   if (!response.ok) {
     let body: any = {}
@@ -53,39 +63,38 @@ export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
   return response.text()
 }
 
-// Define support types if not already present in types.ts
+// Define support types matching API Swagger spec
 export interface SupportTicket {
-  id: string;
-  subject: string;
-  date: string;
-  status: 'Open' | 'In Progress' | 'Resolved' | string;
-  message?: string;
+  id: string
+  subject: string
+  date: string
+  status: 'Open' | 'In Progress' | 'Resolved' | string
+  message?: string
 }
 
 export interface CreateTicketPayload {
-  subject: string;
-  message: string;
+  subject: string
+  message: string
 }
 
 // GET: Fetch user support tickets
 export async function fetchSupportTickets(): Promise<SupportTicket[]> {
-  // fetchWithAuth already checks response.ok and returns parsed JSON
-  const data = await fetchWithAuth('/api/v1/support/tickets');
-  return data;
+  // fetchWithAuth automatically prepends API_BASE_URL and parses JSON
+  const data = await fetchWithAuth('/api/v1/support/tickets')
+  return data
 }
 
 // POST: Create a new support ticket
 export async function createSupportTicket(payload: CreateTicketPayload): Promise<SupportTicket> {
-  // fetchWithAuth automatically stringifies error responses or returns parsed JSON
   const data = await fetchWithAuth('/api/v1/support/tickets', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-  });
+  })
 
-  return data;
+  return data
 }
 
 // Booking types for host bookings

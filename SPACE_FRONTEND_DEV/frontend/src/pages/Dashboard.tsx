@@ -38,14 +38,40 @@ interface UserProfile {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
+// Helper to extract active tab from URL query params (e.g., ?tab=payouts)
+const getTabFromUrl = (): string => {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('tab') || 'overview'
+}
+
 export default function Dashboard({ session, onSignOut }: DashboardProps) {
-  const [activeNav, setActiveNav] = useState('overview')
+  // 1. Initialize activeNav from current URL location query parameter
+  const [activeNav, setActiveNav] = useState<string>(getTabFromUrl)
   const [menuOpen, setMenuOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [branches, setBranches] = useState<Branch[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([])
+
+  // 2. Listen to browser Back/Forward navigation buttons (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveNav(getTabFromUrl())
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  // 3. Navigation handler that updates local state and pushes entry into browser history
+  const handleNavSelect = (navId: string) => {
+    setActiveNav(navId)
+    const newUrl = navId === 'overview' ? '/' : `/?tab=${navId}`
+    if (window.location.search !== `?tab=${navId}` && !(navId === 'overview' && !window.location.search)) {
+      window.history.pushState({ tab: navId }, '', newUrl)
+    }
+  }
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -143,7 +169,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
     }
     setStaffAccounts((prev) => [...prev, newStaff])
     setIsStaffModalOpen(false)
-    setActiveNav('receptionists')
+    handleNavSelect('receptionists')
     notify(
       'Account Created',
       `Receptionist profile created for ${staffData.name} at ${selectedBranch?.name || 'assigned branch'}.`,
@@ -154,7 +180,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
     <div className="min-h-screen bg-canvas">
       <Sidebar
         active={activeNav}
-        onSelect={setActiveNav}
+        onSelect={handleNavSelect}
         mobileOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         onSignOut={onSignOut}
@@ -174,7 +200,7 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
           {activeNav === 'overview' && (
             <OverviewView session={updatedSession} branches={branches} onNotify={notify} />
           )}
-          {(activeNav === 'rooms' || activeNav === 'property-type') && (
+          {(activeNav === 'rooms' || activeNav === 'property-type' || activeNav === 'manage-rooms') && (
             <ManageRooms onNotify={notify} />
           )}
           {activeNav === 'bookings' && <Bookings onNotify={notify} />}
