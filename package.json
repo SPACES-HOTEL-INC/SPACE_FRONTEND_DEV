@@ -1,0 +1,11 @@
+{
+	"name": "spaces-workspace",
+	"private": true,
+	"version": "0.0.0",
+	"scripts": {
+		"dev": "npm --prefix ./SPACE_FRONTEND_DEV/frontend run dev",
+		"build": "npm --prefix ./SPACE_FRONTEND_DEV/frontend run build",
+		"preview": "npm --prefix ./SPACE_FRONTEND_DEV/frontend run preview",
+		"typecheck": "npm --prefix ./SPACE_FRONTEND_DEV/frontend run typecheck"
+	}
+}
