@@ -73,18 +73,15 @@ export default function Bookings({ onNotify }: BookingsProps) {
   const [status, setStatus] = useState<'All' | BookingStatus>('All')
   const [openRequest, setOpenRequest] = useState<string | null>(null)
 
-  const filtered = useMemo(
-    () => {
-      return rows.filter((r) => {
-        const guest = (r.guest || '').toLowerCase()
-        const q = query.trim().toLowerCase()
-        const statusMatches =
-          status === 'All' || (String(r.status || '').toLowerCase() === String(status).toLowerCase())
-        return guest.includes(q) && statusMatches
-      })
-    }, // <-- The missing '}' was added here
-    [rows, query, status]
-  )
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      const guest = (r.guest || '').toLowerCase()
+      const q = query.trim().toLowerCase()
+      const statusMatches =
+        status === 'All' || (String(r.status || '').toLowerCase() === String(status).toLowerCase())
+      return guest.includes(q) && statusMatches
+    })
+  }, [rows, query, status])
 
   const setRowStatus = (id: string, next: BookingStatus) =>
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: next } : r)))
