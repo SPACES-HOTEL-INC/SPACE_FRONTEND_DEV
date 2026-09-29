@@ -110,8 +110,15 @@ export default function Bookings({ onNotify }: BookingsProps) {
         {/* Search & filter bar */}
         <div className="flex flex-col gap-3 border-b border-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="relative flex-1 sm:max-w-xs">
+            {/* WCAG 3.3.2 accessible label for screen readers */}
+            <label htmlFor="guest-search" className="sr-only">
+              Search by guest name
+            </label>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
             <input
+              id="guest-search"
+              type="text"
+              aria-label="Search by guest name"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by guest name…"
@@ -121,7 +128,12 @@ export default function Bookings({ onNotify }: BookingsProps) {
           </div>
 
           <div className="relative">
+            <label htmlFor="status-filter" className="sr-only">
+              Filter by booking status
+            </label>
             <select
+              id="status-filter"
+              aria-label="Filter by booking status"
               value={status}
               onChange={(e) => setStatus(e.target.value as 'All' | BookingStatus)}
               className="w-full appearance-none rounded-xl border border-line bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-ink focus-ring sm:w-48"

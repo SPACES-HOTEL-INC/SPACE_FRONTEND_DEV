@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucid
 import FormField from './FormField'
 import { inputClass } from '../../lib/ui'
 import { DEMO_SESSION } from '../../data/mockData'
+import { API_BASE_URL } from '../../lib/api'
 import type { Session } from '../../types'
 
 interface SignInProps {
@@ -10,9 +11,6 @@ interface SignInProps {
   onNavigateSignup: () => void
   onNavigateForgotPassword: () => void
 }
-
-// Adjust this URL if your login route uses OAuth2 (/api/v1/auth/token or /api/v1/auth/login)
-const API_LOGIN_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/login'
 
 export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateForgotPassword }: SignInProps) {
   const [email, setEmail] = useState('')
@@ -22,61 +20,53 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Form validity check: email and password must be non-empty
+  const isFormValid = email.trim().length > 0 && password.trim().length > 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isFormValid || loading) return
+
     setLoading(true)
     setErrorMessage(null)
 
     try {
-      // 1. Send authentication request to backend
-      const response = await fetch(API_LOGIN_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: email.trim(),
-          password: password,
+          password,
         }),
       })
 
-      // If backend uses OAuth2 Form Data instead of JSON, uncomment this alternative body block:
-      /*
-      const formData = new URLSearchParams()
-      formData.append('username', email.trim())
-      formData.append('password', password)
-
-      const response = await fetch('https://backend-nq9s.onrender.com/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData,
-      })
-      */
-
+      const data = await response.json().catch(() => ({}))
+      const accessToken = data.access_token || data.token
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(
-          errorData.detail || errorData.message || 'Invalid email or password.'
-        )
+        throw new Error(data.detail || data.message || 'Invalid email or password.')
       }
 
-      const data = await response.json()
-
-      // 2. Save auth token if returned (e.g., access_token)
-      if (data.access_token) {
-        if (remember) {
-          localStorage.setItem('access_token', data.access_token)
-        } else {
-          sessionStorage.setItem('access_token', data.access_token)
-        }
+      if (typeof accessToken !== 'string' || !accessToken) {
+        throw new Error('Sign-in response did not include an authentication token.')
       }
 
-      // 3. Build session & route to Dashboard
+      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('access_token')
+      if (remember) {
+        localStorage.setItem('access_token', accessToken)
+      } else {
+        sessionStorage.setItem('access_token', accessToken)
+      }
+
       onAuthenticated({
         ...DEMO_SESSION,
-        email: data.email || email,
+        token: accessToken,
+        email: data.email || email.trim(),
+        userId: data.id || data.user?.id || DEMO_SESSION.userId,
         merchantId: data.id || DEMO_SESSION.merchantId,
         hotelName: data.full_name ? `${data.full_name}'s Property` : DEMO_SESSION.hotelName,
       })
@@ -89,23 +79,23 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
   }
 
   return (
-    <div className="w-full max-w-md animate-rise" data-testid="login-card">
-      <header className="mb-8">
-        <h2 className="text-3xl font-extrabold tracking-tight text-ink">Welcome back</h2>
-        <p className="mt-2 text-[15px] text-slate-500">
+    <div className="w-full max-w-md animate-rise my-auto" data-testid="login-card">
+      <header className="mb-4 sm:mb-6">
+        <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Welcome back</h2>
+        <p className="mt-1 text-sm text-slate-500 sm:text-[15px]">
           Sign in to your Spaces Hm business account.
         </p>
       </header>
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
           <p>{errorMessage}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
+      <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4" data-testid="login-form">
         <FormField label="Business Email" htmlFor="email">
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -147,8 +137,8 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
           </div>
         </FormField>
 
-        <div className="flex items-center justify-between">
-          <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-slate-600">
+        <div className="flex items-center justify-between pt-0.5">
+          <label className="flex cursor-pointer select-none items-center gap-2.5 text-xs text-slate-600 sm:text-sm">
             <input
               type="checkbox"
               checked={remember}
@@ -161,7 +151,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
           <button
             type="button"
             onClick={onNavigateForgotPassword}
-            className="text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700"
+            className="text-xs font-semibold text-brand-600 transition-colors hover:text-brand-700 sm:text-sm"
             data-testid="forgot-password-link"
           >
             Forgot password?
@@ -170,8 +160,8 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
 
         <button
           type="submit"
-          disabled={loading}
-          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 hover:shadow-[0_14px_30px_-10px_rgba(15,118,110,0.9)] focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+          disabled={loading || !isFormValid}
+          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_rgba(15,118,110,0.8)] transition-all duration-200 hover:bg-brand-700 hover:shadow-[0_14px_30px_-10px_rgba(15,118,110,0.9)] focus:outline-none focus:ring-4 focus:ring-brand-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:py-3.5 sm:text-[15px]"
           data-testid="enter-console-button"
         >
           {loading ? (
@@ -187,7 +177,7 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
         </button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-slate-500">
+      <p className="mt-4 text-center text-xs text-slate-500 sm:mt-6 sm:text-sm">
         New to Spaces Hm?{' '}
         <button
           type="button"
