@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, ChevronDown, LogIn, LogOut, CalendarRange, Inbox, MessageSquareText } from 'lucide-react'
 import { cn } from '../../lib/ui'
-import { BOOKINGS, BOOKING_STATUSES } from '../../data/mockData'
+import { BOOKING_STATUSES } from '../../data/mockData'
 import type { Booking, BookingStatus } from '../../types'
+import { fetchHostBookings } from '../../lib/api'
+import { mapHostBookingToBooking } from '../../lib/transforms'
 import BookingTimeline from './BookingTimeline'
 
 interface BookingsProps {
@@ -40,7 +42,31 @@ function StatusBadge({ status, id }: { status: BookingStatus; id: string }) {
  *  • BookingTimeline (static) renders the weekly availability matrix below.
  */
 export default function Bookings({ onNotify }: BookingsProps) {
-  const [rows, setRows] = useState<Booking[]>(BOOKINGS)
+  const [rows, setRows] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    setLoading(true)
+    setError(null)
+
+    fetchHostBookings()
+      .then((items) => {
+        if (!mounted) return
+        const mapped = items.map(mapHostBookingToBooking)
+        setRows(mapped)
+      })
+      .catch((err) => {
+        if (!mounted) return
+        setError(err?.message || String(err))
+      })
+      .finally(() => mounted && setLoading(false))
+
+    return () => {
+      mounted = false
+    }
+  }, [])
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<'All' | BookingStatus>('All')
   const [openRequest, setOpenRequest] = useState<string | null>(null)
@@ -117,6 +143,18 @@ export default function Bookings({ onNotify }: BookingsProps) {
         </div>
 
         <div className="divide-y divide-line">
+          {loading && (
+            <div className="grid place-items-center py-16 text-center" data-testid="bookings-loading">
+              <p className="text-sm text-slate-500">Loading bookings…</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="grid place-items-center py-16 text-center" data-testid="bookings-error">
+              <p className="text-sm font-semibold text-ink">Failed to load bookings</p>
+              <p className="text-xs text-slate-500">{error}</p>
+            </div>
+          )}
           {filtered.map((b) => (
             <div
               key={b.id}

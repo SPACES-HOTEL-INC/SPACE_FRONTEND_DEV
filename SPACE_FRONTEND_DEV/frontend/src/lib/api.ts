@@ -87,3 +87,29 @@ export async function createSupportTicket(payload: CreateTicketPayload): Promise
 
   return data;
 }
+
+// Booking types for host bookings
+export interface HostBooking {
+  id: string;
+  guest_id: string;
+  guest_name?: string;
+  guest_email?: string;
+  room_id: string;
+  room_title?: string;
+  property_id?: string;
+  property_name?: string;
+  check_in_date: string;
+  check_out_date: string;
+  num_nights: number;
+  total_price: number;
+  status: string;
+  special_requests?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+// GET: Fetch bookings for host properties
+export async function fetchHostBookings(): Promise<HostBooking[]> {
+  const data = await fetchWithAuth('/api/v1/bookings/host-bookings');
+  return data;
+}
