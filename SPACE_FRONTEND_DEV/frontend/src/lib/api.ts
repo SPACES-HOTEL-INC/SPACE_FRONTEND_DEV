@@ -110,6 +110,38 @@ export interface HostBooking {
 
 // GET: Fetch bookings for host properties
 export async function fetchHostBookings(): Promise<HostBooking[]> {
-  const data = await fetchWithAuth('/api/v1/bookings/host-bookings');
-  return data;
+  const data: any = await fetchWithAuth('/api/v1/bookings/host-bookings');
+
+  // Normalise common API shapes -> always return an array of HostBooking
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data.results)) return data.results
+  if (Array.isArray(data.data)) return data.data
+  if (Array.isArray(data.bookings)) return data.bookings
+
+  // If the server returned a single object for some reason, wrap it
+  if (typeof data === 'object') return [data]
+
+  return []
+}
+
+// Try to fetch weekly availability rows derived from host bookings.
+// If the backend exposes a dedicated endpoint in future we can switch to it.
+export async function fetchWeeklyAvailability(): Promise<any[]> {
+  try {
+    // Attempt a dedicated availability endpoint first (non-fatal if 404)
+    const resp: any = await fetchWithAuth('/api/v1/availability/weekly')
+    if (Array.isArray(resp)) return resp
+    if (Array.isArray(resp.data)) return resp.data
+  } catch (_e) {
+    // ignore and fallback to deriving from bookings
+  }
+
+  // Fallback: derive availability from host bookings
+  try {
+    const bookings = await fetchHostBookings()
+    return bookings
+  } catch (_e) {
+    return []
+  }
 }

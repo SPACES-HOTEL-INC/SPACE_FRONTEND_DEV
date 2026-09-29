@@ -54,7 +54,9 @@ export default function Bookings({ onNotify }: BookingsProps) {
     fetchHostBookings()
       .then((items) => {
         if (!mounted) return
-        const mapped = items.map(mapHostBookingToBooking)
+        // Ensure items is an array; api.ts normalises but be defensive here.
+        const list = Array.isArray(items) ? items : []
+        const mapped = list.map(mapHostBookingToBooking)
         setRows(mapped)
       })
       .catch((err) => {
@@ -72,11 +74,14 @@ export default function Bookings({ onNotify }: BookingsProps) {
   const [openRequest, setOpenRequest] = useState<string | null>(null)
 
   const filtered = useMemo(
-    () =>
-      rows.filter(
-        (r) =>
-          r.guest.toLowerCase().includes(query.trim().toLowerCase()) &&
-          (status === 'All' || r.status === status),
+    () => {
+      return rows.filter((r) => {
+        const guest = (r.guest || '').toLowerCase()
+        const q = query.trim().toLowerCase()
+        const statusMatches =
+          status === 'All' || (String(r.status || '').toLowerCase() === String(status).toLowerCase())
+        return guest.includes(q) && statusMatches
+      })
       ),
     [rows, query, status],
   )
