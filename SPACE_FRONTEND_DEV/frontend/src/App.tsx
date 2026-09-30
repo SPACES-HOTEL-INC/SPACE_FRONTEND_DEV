@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import OtpVerification from './components/auth/OtpVerification'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
-import type { Page, Session } from './types'
+import type { Session } from './types'
+
+// Extended page type to include 'otp'
+type Page = 'login' | 'signup' | 'otp' | 'forgot-password' | 'reset-password' | 'dashboard'
 
 const SESSION_STORAGE_KEY = 'spaces-hm-session'
 
@@ -26,8 +30,9 @@ function readStoredSession(): Session | null {
 
 function App() {
   const [session, setSession] = useState<Session | null>(readStoredSession)
-  const [page, setPage] = useState<Page>(() => session ? 'dashboard' : 'login')
+  const [page, setPage] = useState<Page>(() => (session ? 'dashboard' : 'login'))
   const [resetToken, setResetToken] = useState('')
+  const [otpEmail, setOtpEmail] = useState('')
 
   const handleAuthenticated = (nextSession: Session, remember = true) => {
     try {
@@ -52,6 +57,11 @@ function App() {
     setPage('login')
   }
 
+  const handleNavigateOtp = (email: string) => {
+    setOtpEmail(email)
+    setPage('otp')
+  }
+
   const handleNavigateResetPassword = (nextToken: string) => {
     setResetToken(nextToken)
     setPage('reset-password')
@@ -68,10 +78,23 @@ function App() {
       )}
 
       {page === 'signup' && (
-        <Register 
-          onAuthenticated={handleAuthenticated} 
-          onNavigateLogin={() => setPage('login')} 
+        <Register
+          onAuthenticated={handleAuthenticated}
+          onNavigateLogin={() => setPage('login')}
+          onNavigateOtp={handleNavigateOtp}
         />
+      )}
+
+      {page === 'otp' && (
+        <div className="flex h-full w-full items-center justify-center p-4">
+          <OtpVerification
+            email={otpEmail}
+            onNavigateLogin={() => {
+              setOtpEmail('')
+              setPage('login')
+            }}
+          />
+        </div>
       )}
 
       {page === 'forgot-password' && (

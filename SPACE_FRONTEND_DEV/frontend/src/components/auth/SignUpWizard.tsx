@@ -16,6 +16,7 @@ import type { RegistrationData, Session } from '../../types'
 interface SignUpWizardProps {
   onAuthenticated: (session: Session) => void
   onNavigateLogin: () => void
+  onNavigateOtp: (email: string) => void
 }
 
 const INITIAL_DATA: RegistrationData & { email?: string; confirmPassword?: string } = {
@@ -33,9 +34,12 @@ const INITIAL_DATA: RegistrationData & { email?: string; confirmPassword?: strin
   documentName: '',
 }
 
-const API_REGISTER_URL = 'https://backend-nq9s.onrender.com/api/v1/auth/register'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-nq9s.onrender.com'
 
-export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignUpWizardProps) {
+export default function SignUpWizard({
+  onNavigateLogin,
+  onNavigateOtp,
+}: SignUpWizardProps) {
   const [data, setData] = useState(INITIAL_DATA)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -74,10 +78,10 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
         password: data.password,
         full_name: `${data.firstName} ${data.lastName}`.trim(),
         phone_number: data.mobile,
-        role: 'host' 
+        role: 'host',
       }
 
-      const response = await fetch(API_REGISTER_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,18 +89,21 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
         body: JSON.stringify(payload),
       })
 
+      const resData = await response.json().catch(() => ({}))
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        
-        if (errorData.detail && Array.isArray(errorData.detail)) {
-           throw new Error(errorData.detail[0].msg || 'Validation Error')
+        if (resData.detail && Array.isArray(resData.detail)) {
+          throw new Error(resData.detail[0]?.msg || 'Validation Error')
         }
-        
-        throw new Error(errorData.detail || errorData.message || 'Registration failed.')
+        throw new Error(resData.detail || resData.message || 'Registration failed.')
       }
 
-      onNavigateLogin()
-
+      // Registration successful -> Navigate to OTP Verification with the user's email
+      if (onNavigateOtp && data.email) {
+        onNavigateOtp(data.email.trim())
+      } else {
+        onNavigateLogin()
+      }
     } catch (err: any) {
       console.error('Registration error:', err)
       setError(err.message || 'Unable to create account. Please try again.')
@@ -107,7 +114,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
 
   return (
     <div className="w-full max-w-lg animate-rise" data-testid="signup-wizard">
-      {/* Back Navigation Button styled with Brand Color */}
+      {/* Back Navigation Button */}
       <div className="mb-6">
         <button
           type="button"
@@ -264,7 +271,7 @@ export default function SignUpWizard({ onAuthenticated, onNavigateLogin }: SignU
                 <Loader2 className="h-5 w-5 animate-spin" /> Creating account…
               </>
             ) : (
-              <>Sign Up &amp; Access Account</>
+              <>Sign Up &amp; Verify Account</>
             )}
           </button>
         </div>
