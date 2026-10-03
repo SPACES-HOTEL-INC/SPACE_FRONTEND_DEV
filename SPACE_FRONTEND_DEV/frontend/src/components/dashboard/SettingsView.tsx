@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Building2,
   Bell,
   Lock,
   FileText,
@@ -18,7 +17,7 @@ import {
 import { fetchWithAuth } from "../../lib/api"
 
 export default function SettingsView() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'details' | 'notifications' | 'security' | 'policies'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'policies'>('profile')
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -27,14 +26,6 @@ export default function SettingsView() {
   // Profile State
   const [fullName, setFullName] = useState('')
   const [userPhone, setUserPhone] = useState('')
-
-  // Hotel Business Details State
-  const [propertyName, setPropertyName] = useState('')
-  const [businessEmail, setBusinessEmail] = useState('')
-  const [supportPhone, setSupportPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [currency, setCurrency] = useState('NGN')
-  const [timezone, setTimezone] = useState('Africa/Lagos')
 
   // Notification Preferences State
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -63,9 +54,8 @@ export default function SettingsView() {
         setLoading(true)
         setErrorMessage(null)
 
-        const [profileRes, businessRes, prefRes] = await Promise.all([
+        const [profileRes, prefRes] = await Promise.all([
           fetchWithAuth('/api/v1/settings/profile').catch(() => null),
-          fetchWithAuth('/api/v1/settings/business').catch(() => null),
           fetchWithAuth('/api/v1/settings/preferences').catch(() => null),
         ])
 
@@ -73,16 +63,6 @@ export default function SettingsView() {
           const profileData = await profileRes.json()
           setFullName(profileData.fullName || profileData.full_name || '')
           setUserPhone(profileData.phone || '')
-        }
-
-        if (businessRes && businessRes.ok) {
-          const businessData = await businessRes.json()
-          setPropertyName(businessData.propertyName || businessData.property_name || '')
-          setBusinessEmail(businessData.businessEmail || businessData.business_email || '')
-          setSupportPhone(businessData.supportPhone || businessData.support_phone || '')
-          setAddress(businessData.address || '')
-          setCurrency(businessData.currency || 'NGN')
-          setTimezone(businessData.timezone || 'Africa/Lagos')
         }
 
         if (prefRes && prefRes.ok) {
@@ -115,9 +95,6 @@ export default function SettingsView() {
       if (activeTab === 'profile') {
         endpoint = '/api/v1/settings/profile'
         payload = { fullName, phone: userPhone }
-      } else if (activeTab === 'details') {
-        endpoint = '/api/v1/settings/business'
-        payload = { propertyName, businessEmail, supportPhone, address, currency, timezone }
       } else if (activeTab === 'notifications') {
         endpoint = '/api/v1/settings/preferences'
         payload = { emailNotifications, smsAlerts, bookingConfirmations, payoutAlerts, theme }
@@ -198,17 +175,6 @@ export default function SettingsView() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('details')}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
-            activeTab === 'details'
-              ? 'border-brand-600 text-brand-600 font-semibold'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Building2 className="h-4 w-4" /> Hotel Details
-        </button>
-        <button
-          type="button"
           onClick={() => setActiveTab('notifications')}
           className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
             activeTab === 'notifications'
@@ -282,80 +248,6 @@ export default function SettingsView() {
                   value={userPhone}
                   onChange={(e) => setUserPhone(e.target.value)}
                   placeholder="e.g. +2348059780405"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Hotel Details Tab */}
-        {activeTab === 'details' && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-semibold text-ink">Property & Business Settings</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Property Name</label>
-                <input
-                  type="text"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  placeholder="Spaces Hotel & Suites"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Business Email</label>
-                <input
-                  type="email"
-                  value={businessEmail}
-                  onChange={(e) => setBusinessEmail(e.target.value)}
-                  placeholder="contact@spaceshm.com"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Support Phone</label>
-                <input
-                  type="text"
-                  value={supportPhone}
-                  onChange={(e) => setSupportPhone(e.target.value)}
-                  placeholder="+2348059780405"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Currency</label>
-                <input
-                  type="text"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  placeholder="NGN"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Address</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Hospitality Way, Abuja, Nigeria"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Timezone</label>
-                <input
-                  type="text"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  placeholder="Africa/Lagos"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
