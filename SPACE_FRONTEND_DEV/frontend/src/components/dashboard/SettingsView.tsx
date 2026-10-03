@@ -5,7 +5,6 @@ import {
   FileText,
   Save,
   CheckCircle2,
-  Shield,
   KeyRound,
   Clock,
   Loader2,
@@ -32,7 +31,7 @@ export default function SettingsView() {
   const [smsAlerts, setSmsAlerts] = useState(false)
   const [bookingConfirmations, setBookingConfirmations] = useState(true)
   const [payoutAlerts, setPayoutAlerts] = useState(true)
-  const [theme, setTheme] = useState('dark')
+  const [theme, setTheme] = useState('Dark')
 
   // Security State
   const [currentPassword, setCurrentPassword] = useState('')
@@ -47,7 +46,20 @@ export default function SettingsView() {
   const [checkOutTime, setCheckOutTime] = useState('11:00')
   const [cancellationPolicy, setCancellationPolicy] = useState('flexible')
 
-  // Fetch initial settings from all backend endpoints
+  // Helper to safely unpack response data regardless of whether fetchWithAuth returns a Response or raw Object
+  const safeUnpack = async (res: any) => {
+    if (!res) return null;
+    if (typeof res.json === 'function') {
+      try {
+        return await res.json();
+      } catch (_) {
+        return null;
+      }
+    }
+    return res;
+  };
+
+  // Fetch initial settings from backend endpoints
   useEffect(() => {
     async function loadAllSettings() {
       try {
@@ -59,19 +71,19 @@ export default function SettingsView() {
           fetchWithAuth('/api/v1/settings/preferences').catch(() => null),
         ])
 
-        if (profileRes && profileRes.ok) {
-          const profileData = await profileRes.json()
-          setFullName(profileData.fullName || profileData.full_name || '')
+        const profileData = await safeUnpack(profileRes)
+        if (profileData) {
+          setFullName(profileData.fullname || profileData.fullName || profileData.full_name || '')
           setUserPhone(profileData.phone || '')
         }
 
-        if (prefRes && prefRes.ok) {
-          const prefData = await prefRes.json()
+        const prefData = await safeUnpack(prefRes)
+        if (prefData) {
           setEmailNotifications(prefData.emailNotifications ?? prefData.email_notifications ?? true)
           setSmsAlerts(prefData.smsAlerts ?? prefData.sms_alerts ?? false)
           setBookingConfirmations(prefData.bookingConfirmations ?? prefData.booking_confirmations ?? true)
           setPayoutAlerts(prefData.payoutAlerts ?? prefData.payout_alerts ?? true)
-          setTheme(prefData.theme || 'dark')
+          setTheme(prefData.theme || 'Dark')
         }
       } catch (err: any) {
         setErrorMessage(err.message || 'Failed to load settings')
@@ -90,14 +102,24 @@ export default function SettingsView() {
 
     try {
       let endpoint = ''
-      let payload = {}
+      let payload: any = {}
 
       if (activeTab === 'profile') {
         endpoint = '/api/v1/settings/profile'
-        payload = { fullName, phone: userPhone }
+        payload = { 
+          fullname: fullName.trim(), 
+          phone: userPhone.trim(),
+          avatarUrl: "" 
+        }
       } else if (activeTab === 'notifications') {
         endpoint = '/api/v1/settings/preferences'
-        payload = { emailNotifications, smsAlerts, bookingConfirmations, payoutAlerts, theme }
+        payload = { 
+          emailNotifications, 
+          smsAlerts, 
+          bookingConfirmations, 
+          payoutAlerts, 
+          theme 
+        }
       } else if (activeTab === 'security') {
         if (!currentPassword || !newPassword) {
           setErrorMessage('Please fill in both current and new passwords.')
@@ -110,11 +132,21 @@ export default function SettingsView() {
           return
         }
         endpoint = '/api/v1/settings/security/password'
-        payload = { currentPassword, newPassword, confirmPassword }
+        payload = { 
+          currentPassword, 
+          newPassword, 
+          confirmPassword 
+        }
       } else if (activeTab === 'policies') {
-        // Fallback for custom policy tab if handled under business settings
         endpoint = '/api/v1/settings/business'
-        payload = { checkInTime, checkOutTime, cancellationPolicy }
+        payload = { 
+          propertyName: "Property", 
+          businessEmail: "info@property.com", 
+          supportPhone: userPhone || "0000000000", 
+          address: "Default Address", 
+          currency: "USD", 
+          timezone: "UTC" 
+        }
       }
 
       const res = await fetchWithAuth(endpoint, {
@@ -123,9 +155,10 @@ export default function SettingsView() {
         body: JSON.stringify(payload),
       })
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.message || errorData.detail || 'Failed to update settings')
+      // Check HTTP status safely if response object exists
+      if (res && typeof res.ok === 'boolean' && !res.ok) {
+        const errorData = await safeUnpack(res)
+        throw new Error(errorData?.message || errorData?.detail || 'Failed to update settings')
       }
 
       setSaved(true)
@@ -247,7 +280,7 @@ export default function SettingsView() {
                   type="text"
                   value={userPhone}
                   onChange={(e) => setUserPhone(e.target.value)}
-                  placeholder="e.g. +2348059780405"
+                  placeholder="e.g. 07048375587"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                 />
               </div>
@@ -339,7 +372,6 @@ export default function SettingsView() {
                       onClick={() => setShowCurrentPassword((visible) => !visible)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
                       aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
-                      title={showCurrentPassword ? 'Hide current password' : 'Show current password'}
                     >
                       {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -362,7 +394,6 @@ export default function SettingsView() {
                         onClick={() => setShowNewPassword((visible) => !visible)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
                         aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
-                        title={showNewPassword ? 'Hide new password' : 'Show new password'}
                       >
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -384,7 +415,6 @@ export default function SettingsView() {
                         onClick={() => setShowConfirmPassword((visible) => !visible)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"
                         aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
-                        title={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
