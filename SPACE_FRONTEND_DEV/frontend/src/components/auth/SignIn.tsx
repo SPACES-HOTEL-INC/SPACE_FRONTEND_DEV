@@ -59,13 +59,20 @@ export default function SignIn({ onAuthenticated, onNavigateSignup, onNavigateFo
         sessionStorage.setItem('access_token', accessToken)
       }
 
+      const managerName = data.user?.full_name || data.full_name
+
       onAuthenticated({
         ...DEMO_SESSION,
         token: accessToken,
         email: data.email || email.trim(),
         userId: data.id || data.user?.id || DEMO_SESSION.userId,
         merchantId: data.id || DEMO_SESSION.merchantId,
-        hotelName: data.full_name ? `${data.full_name}'s Property` : DEMO_SESSION.hotelName,
+        hotelName: managerName ? `${managerName}'s Property` : DEMO_SESSION.hotelName,
+        user: {
+          id: data.user?.id || data.id,
+          email: data.user?.email || data.email || email.trim(),
+          full_name: managerName,
+        },
       }, remember)
     } catch (err: any) {
       console.error('Login error:', err)

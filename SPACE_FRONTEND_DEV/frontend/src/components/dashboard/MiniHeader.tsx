@@ -8,11 +8,11 @@ interface MiniHeaderProps {
 }
 
 export default function MiniHeader({ session, branches, onOpenMenu }: MiniHeaderProps) {
-  // Priority: 1st database property name -> session hotel name -> user full name -> default fallback
+  // Prefer the signed-in manager's name over the property name.
   const activeHotelName =
-    branches?.[0]?.name ||
-    session?.hotelName ||
     session?.user?.full_name ||
+    session?.hotelName ||
+    branches?.[0]?.name ||
     'My Property'
 
   // Dynamic Merchant ID derived from session or user ID
