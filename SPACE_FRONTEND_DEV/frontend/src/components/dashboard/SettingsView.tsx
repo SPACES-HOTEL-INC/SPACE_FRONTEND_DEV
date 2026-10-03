@@ -15,7 +15,12 @@ import {
 } from 'lucide-react'
 import { fetchWithAuth } from "../../lib/api"
 
-export default function SettingsView() {
+interface SettingsViewProps {
+  initialFullName?: string
+  onProfileNameSaved?: (fullName: string) => void
+}
+
+export default function SettingsView({ initialFullName = '', onProfileNameSaved }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'policies'>('profile')
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -23,7 +28,7 @@ export default function SettingsView() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Profile State
-  const [fullName, setFullName] = useState('')
+  const [fullName, setFullName] = useState(initialFullName)
   const [userPhone, setUserPhone] = useState('')
 
   // Notification Preferences State
@@ -73,7 +78,8 @@ export default function SettingsView() {
 
         const profileData = await safeUnpack(profileRes)
         if (profileData) {
-          setFullName(profileData.fullname || profileData.fullName || profileData.full_name || '')
+          const profileFullName = profileData.full_name || profileData.fullName || profileData.fullname
+          setFullName(profileFullName || initialFullName)
           setUserPhone(profileData.phone || '')
         }
 
@@ -94,6 +100,12 @@ export default function SettingsView() {
 
     loadAllSettings()
   }, [])
+
+  useEffect(() => {
+    if (initialFullName) {
+      setFullName((currentName) => currentName || initialFullName)
+    }
+  }, [initialFullName])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -161,6 +173,9 @@ export default function SettingsView() {
         throw new Error(errorData?.message || errorData?.detail || 'Failed to update settings')
       }
 
+      if (activeTab === 'profile') {
+        onProfileNameSaved?.(fullName.trim())
+      }
       setSaved(true)
       if (activeTab === 'security') {
         setCurrentPassword('')

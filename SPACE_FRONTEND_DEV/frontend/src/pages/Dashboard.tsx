@@ -211,7 +211,14 @@ export default function Dashboard({ session, onSignOut }: DashboardProps) {
               onOpenStaffModal={() => setIsStaffModalOpen(true)}
             />
           )}
-          {activeNav === 'settings' && <SettingsView />}
+          {activeNav === 'settings' && (
+            <SettingsView
+              initialFullName={userProfile?.full_name || session.user?.full_name}
+              onProfileNameSaved={(fullName) =>
+                setUserProfile((profile) => ({ ...profile, full_name: fullName }))
+              }
+            />
+          )}
           {activeNav === 'support' && <SupportView />}
         </main>
       </div>
