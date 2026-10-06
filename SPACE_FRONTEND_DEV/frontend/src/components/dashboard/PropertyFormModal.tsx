@@ -39,7 +39,7 @@ const PROPERTY_TYPES = [
   { label: 'Hotel', value: 'Hotel' },
   { label: 'Resort', value: 'Resort' },
   { label: 'Apartment / Shortlet', value: 'Apartment' },
-  { label: 'Boutique Hotel', value: 'Boutique Hotel' },
+  { label: 'Event Spaces', value: 'Event Spaces' },
   { label: 'Villa', value: 'Villa' },
 ]
 

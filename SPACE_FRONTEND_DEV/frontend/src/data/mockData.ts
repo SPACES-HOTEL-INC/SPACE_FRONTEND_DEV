@@ -72,7 +72,7 @@ export const CHECK_INS: CheckIn[] = [
   { id: 'g5', guest: 'Sofia Andersson', initials: 'SA', room: 'Room 1101', roomType: 'Presidential', arrival: '6:20 PM', nights: 4, guests: 2, status: 'pending' },
 ]
 
-export const PROPERTY_TYPES = ['Hotel', 'Resort', 'Boutique Hotel', 'Serviced Apartment', 'Villa / Estate', 'Guest House', 'Hostel']
+export const PROPERTY_TYPES = ['Hotel', 'Resort', 'Event Spaces', 'Serviced Apartment', 'Villa / Estate', 'Guest House', 'Hostel']
 export const STAR_RATINGS = ['5 Star', '4 Star', '3 Star', '2 Star', '1 Star']
 
 export const CURRENCIES = [
