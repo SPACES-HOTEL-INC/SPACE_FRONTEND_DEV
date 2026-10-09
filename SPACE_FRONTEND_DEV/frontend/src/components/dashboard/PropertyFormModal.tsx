@@ -32,7 +32,7 @@ interface PropertyFormModalProps {
   }) => void
 }
 
-const MIN_IMAGES = 0
+const MIN_IMAGES = 2
 const MAX_IMAGES = 5
 
 const PROPERTY_TYPES = [
@@ -146,6 +146,11 @@ useEffect(() => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!canPublish) return
+
+    if (!isEditing && files.length < MIN_IMAGES) {
+      setErrorMessage(`Upload at least ${MIN_IMAGES} property images.`)
+      return
+    }
 
     setIsSubmitting(true)
     setErrorMessage(null)
@@ -431,7 +436,7 @@ useEffect(() => {
 
           {/* Cover Photos */}
           <div>
-            <span className={labelClass}>Property Photos (Optional)</span>
+            <span className={labelClass}>Property Photos *</span>
             <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileChange} className="hidden" />
 
             <button
@@ -446,7 +451,7 @@ useEffect(() => {
               <p className="text-sm font-semibold text-ink">
                 {files.length >= MAX_IMAGES ? 'Maximum photos attached' : 'Click to add property photos'}
               </p>
-              <p className="text-xs text-slate-500">Up to 5 images (JPEG, PNG)</p>
+              <p className="text-xs text-slate-500">Upload at least 2 images, up to 5 (JPEG, PNG)</p>
             </button>
 
             {previewUrls.length > 0 && (
