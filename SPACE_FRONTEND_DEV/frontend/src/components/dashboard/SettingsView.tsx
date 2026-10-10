@@ -12,20 +12,36 @@ import {
   User,
   Eye,
   EyeOff,
+  Building2,
+  Trash2,
 } from 'lucide-react'
-import { fetchWithAuth } from "../../lib/api"
+import { fetchWithAuth } from '../../lib/api'
 
 interface SettingsViewProps {
   initialFullName?: string
   onProfileNameSaved?: (fullName: string) => void
 }
 
+interface PropertyOption {
+  id: string
+  name: string
+  propertyType: string
+}
+
 export default function SettingsView({ initialFullName = '', onProfileNameSaved }: SettingsViewProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'policies'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'policies' | 'property-management'>('profile')
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const [properties, setProperties] = useState<PropertyOption[]>([])
+  const [selectedPropertyId, setSelectedPropertyId] = useState('')
+  const [isLoadingProperties, setIsLoadingProperties] = useState(false)
+  const [isDeletingProperty, setIsDeletingProperty] = useState(false)
+  const [propertyManagementError, setPropertyManagementError] = useState<string | null>(null)
+  const [propertyManagementSuccess, setPropertyManagementSuccess] = useState<string | null>(null)
+  const [confirmPropertyDeletion, setConfirmPropertyDeletion] = useState(false)
 
   // Profile State
   const [fullName, setFullName] = useState(initialFullName)
@@ -107,8 +123,73 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
     }
   }, [initialFullName])
 
+  useEffect(() => {
+    if (activeTab !== 'property-management') return
+
+    let isMounted = true
+
+    const loadProperties = async () => {
+      setIsLoadingProperties(true)
+      setPropertyManagementError(null)
+      setPropertyManagementSuccess(null)
+
+      try {
+        const data = await fetchWithAuth('/api/v1/properties/mine')
+        const items = Array.isArray(data) ? data : data.properties || data.items || data.data || []
+        const nextProperties: PropertyOption[] = items.map((property: any) => ({
+          id: String(property.id ?? property._id ?? ''),
+          name: property.hotel_name || property.name || property.title || 'Untitled property',
+          propertyType: String(property.property_type || 'Property'),
+        })).filter((property: PropertyOption) => property.id)
+
+        if (!isMounted) return
+        setProperties(nextProperties)
+        setSelectedPropertyId((currentId) =>
+          nextProperties.some((property) => property.id === currentId)
+            ? currentId
+            : nextProperties[0]?.id || ''
+        )
+      } catch (error: any) {
+        if (isMounted) setPropertyManagementError(error.message || 'Could not load your properties.')
+      } finally {
+        if (isMounted) setIsLoadingProperties(false)
+      }
+    }
+
+    loadProperties()
+    return () => {
+      isMounted = false
+    }
+  }, [activeTab])
+
+  const handleDeleteProperty = async () => {
+    const propertyToDelete = properties.find((property) => property.id === selectedPropertyId)
+    if (!propertyToDelete) return
+
+    setIsDeletingProperty(true)
+    setPropertyManagementError(null)
+    setPropertyManagementSuccess(null)
+
+    try {
+      await fetchWithAuth(`/api/v1/properties/${encodeURIComponent(propertyToDelete.id)}`, {
+        method: 'DELETE',
+      })
+
+      const remainingProperties = properties.filter((property) => property.id !== propertyToDelete.id)
+      setProperties(remainingProperties)
+      setSelectedPropertyId(remainingProperties[0]?.id || '')
+      setConfirmPropertyDeletion(false)
+      setPropertyManagementSuccess(`${propertyToDelete.name} was deleted.`)
+    } catch (error: any) {
+      setPropertyManagementError(error.message || 'Could not delete this property.')
+    } finally {
+      setIsDeletingProperty(false)
+    }
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (activeTab === 'property-management') return
     setSaving(true)
     setErrorMessage(null)
 
@@ -254,6 +335,17 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
         >
           <FileText className="h-4 w-4" /> Policies & Check-In
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('property-management')}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 transition ${
+            activeTab === 'property-management'
+              ? 'border-brand-600 text-brand-600 font-semibold'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Building2 className="h-4 w-4" /> Manage Listings
+        </button>
       </div>
 
       {/* Alert Banners */}
@@ -272,6 +364,7 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
       )}
 
       {/* Tab Content Form */}
+      {activeTab !== 'property-management' && (
       <form onSubmit={handleSave} className="max-w-3xl space-y-6">
         {/* Personal Profile Tab */}
         {activeTab === 'profile' && (
@@ -494,6 +587,111 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
+      )}
+
+      {activeTab === 'property-management' && (
+        <section className="max-w-3xl space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">Delete a Property</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Select a property branch to remove it from your listings.
+            </p>
+          </div>
+
+          {propertyManagementError && (
+            <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              {propertyManagementError}
+            </div>
+          )}
+
+          {propertyManagementSuccess && (
+            <div role="status" className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              {propertyManagementSuccess}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <label htmlFor="property-to-delete" className="mb-2 block text-sm font-semibold text-ink">
+              Property branch
+            </label>
+            {isLoadingProperties ? (
+              <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                Loading properties...
+              </div>
+            ) : properties.length > 0 ? (
+              <>
+                <select
+                  id="property-to-delete"
+                  value={selectedPropertyId}
+                  disabled={isDeletingProperty || confirmPropertyDeletion}
+                  onChange={(event) => {
+                    setSelectedPropertyId(event.target.value)
+                    setConfirmPropertyDeletion(false)
+                    setPropertyManagementError(null)
+                    setPropertyManagementSuccess(null)
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 disabled:bg-slate-50"
+                >
+                  {properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.name} ({property.propertyType})
+                    </option>
+                  ))}
+                </select>
+
+                {!confirmPropertyDeletion ? (
+                  <button
+                    type="button"
+                    disabled={isDeletingProperty}
+                    onClick={() => {
+                      setPropertyManagementError(null)
+                      setPropertyManagementSuccess(null)
+                      setConfirmPropertyDeletion(true)
+                    }}
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete selected property
+                  </button>
+                ) : (
+                  <div role="alertdialog" aria-live="assertive" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-semibold text-red-900">
+                      Delete {properties.find((property) => property.id === selectedPropertyId)?.name}?
+                    </p>
+                    <p className="mt-1 text-sm text-red-800">This action cannot be undone.</p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        disabled={isDeletingProperty}
+                        onClick={() => setConfirmPropertyDeletion(false)}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDeletingProperty}
+                        onClick={handleDeleteProperty}
+                        className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {isDeletingProperty ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        {isDeletingProperty ? 'Deleting...' : 'Confirm delete'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                No properties are available to delete.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
