@@ -186,7 +186,7 @@ useEffect(() => {
         return
       }
 
-      const createdProperty = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties`, {
+      const createdProperty = await fetchWithAuth(`${API_BASE_URL}/api/v1/properties/`, {
         method: 'POST',
         body: formData,
       })
