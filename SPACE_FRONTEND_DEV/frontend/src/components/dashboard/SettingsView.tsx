@@ -28,6 +28,11 @@ interface PropertyOption {
   propertyType: string
 }
 
+interface RoomOption {
+  id: string
+  name: string
+}
+
 export default function SettingsView({ initialFullName = '', onProfileNameSaved }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'policies' | 'property-management'>('profile')
   const [saved, setSaved] = useState(false)
@@ -42,6 +47,13 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
   const [propertyManagementError, setPropertyManagementError] = useState<string | null>(null)
   const [propertyManagementSuccess, setPropertyManagementSuccess] = useState<string | null>(null)
   const [confirmPropertyDeletion, setConfirmPropertyDeletion] = useState(false)
+  const [rooms, setRooms] = useState<RoomOption[]>([])
+  const [selectedRoomId, setSelectedRoomId] = useState('')
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false)
+  const [isDeletingRoom, setIsDeletingRoom] = useState(false)
+  const [roomManagementError, setRoomManagementError] = useState<string | null>(null)
+  const [roomManagementSuccess, setRoomManagementSuccess] = useState<string | null>(null)
+  const [confirmRoomDeletion, setConfirmRoomDeletion] = useState(false)
 
   // Profile State
   const [fullName, setFullName] = useState(initialFullName)
@@ -162,6 +174,52 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
     }
   }, [activeTab])
 
+  useEffect(() => {
+    if (activeTab !== 'property-management' || !selectedPropertyId) {
+      setRooms([])
+      setSelectedRoomId('')
+      setRoomManagementError(null)
+      return
+    }
+
+    let isMounted = true
+
+    const loadRooms = async () => {
+      setIsLoadingRooms(true)
+      setRoomManagementError(null)
+      setRoomManagementSuccess(null)
+      setConfirmRoomDeletion(false)
+
+      try {
+        const data = await fetchWithAuth(
+          `/api/v1/rooms/?property_id=${encodeURIComponent(selectedPropertyId)}`
+        )
+        const items = Array.isArray(data) ? data : data.rooms || data.items || data.data || []
+        const nextRooms: RoomOption[] = items.map((room: any, index: number) => ({
+          id: String(room.id ?? room._id ?? ''),
+          name: room.title || room.name || `Room type ${index + 1}`,
+        })).filter((room: RoomOption) => room.id)
+
+        if (!isMounted) return
+        setRooms(nextRooms)
+        setSelectedRoomId(nextRooms[0]?.id || '')
+      } catch (error: any) {
+        if (isMounted) {
+          setRooms([])
+          setSelectedRoomId('')
+          setRoomManagementError(error.message || 'Could not load rooms for this property.')
+        }
+      } finally {
+        if (isMounted) setIsLoadingRooms(false)
+      }
+    }
+
+    loadRooms()
+    return () => {
+      isMounted = false
+    }
+  }, [activeTab, selectedPropertyId])
+
   const handleDeleteProperty = async () => {
     const propertyToDelete = properties.find((property) => property.id === selectedPropertyId)
     if (!propertyToDelete) return
@@ -179,11 +237,38 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
       setProperties(remainingProperties)
       setSelectedPropertyId(remainingProperties[0]?.id || '')
       setConfirmPropertyDeletion(false)
+      setRooms([])
+      setSelectedRoomId('')
       setPropertyManagementSuccess(`${propertyToDelete.name} was deleted.`)
     } catch (error: any) {
       setPropertyManagementError(error.message || 'Could not delete this property.')
     } finally {
       setIsDeletingProperty(false)
+    }
+  }
+
+  const handleDeleteRoom = async () => {
+    const roomToDelete = rooms.find((room) => room.id === selectedRoomId)
+    if (!roomToDelete) return
+
+    setIsDeletingRoom(true)
+    setRoomManagementError(null)
+    setRoomManagementSuccess(null)
+
+    try {
+      await fetchWithAuth(`/api/v1/rooms/${encodeURIComponent(roomToDelete.id)}`, {
+        method: 'DELETE',
+      })
+
+      const remainingRooms = rooms.filter((room) => room.id !== roomToDelete.id)
+      setRooms(remainingRooms)
+      setSelectedRoomId(remainingRooms[0]?.id || '')
+      setConfirmRoomDeletion(false)
+      setRoomManagementSuccess(`${roomToDelete.name} was deleted.`)
+    } catch (error: any) {
+      setRoomManagementError(error.message || 'Could not delete this room.')
+    } finally {
+      setIsDeletingRoom(false)
     }
   }
 
@@ -630,8 +715,11 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
                   onChange={(event) => {
                     setSelectedPropertyId(event.target.value)
                     setConfirmPropertyDeletion(false)
+                    setConfirmRoomDeletion(false)
                     setPropertyManagementError(null)
                     setPropertyManagementSuccess(null)
+                    setRoomManagementError(null)
+                    setRoomManagementSuccess(null)
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 disabled:bg-slate-50"
                 >
@@ -687,6 +775,106 @@ export default function SettingsView({ initialFullName = '', onProfileNameSaved 
             ) : (
               <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                 No properties are available to delete.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink">Delete a Room Type</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Choose a room listed under the selected property to remove it.
+            </p>
+
+            {roomManagementError && (
+              <div role="alert" className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                {roomManagementError}
+              </div>
+            )}
+
+            {roomManagementSuccess && (
+              <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                {roomManagementSuccess}
+              </div>
+            )}
+
+            {!selectedPropertyId ? (
+              <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                Select a property to view its room types.
+              </p>
+            ) : isLoadingRooms ? (
+              <div className="mt-4 flex items-center gap-2 py-3 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                Loading room types...
+              </div>
+            ) : rooms.length > 0 ? (
+              <>
+                <label htmlFor="room-to-delete" className="mb-2 mt-4 block text-sm font-semibold text-ink">
+                  Room type
+                </label>
+                <select
+                  id="room-to-delete"
+                  value={selectedRoomId}
+                  disabled={isDeletingRoom || confirmRoomDeletion}
+                  onChange={(event) => {
+                    setSelectedRoomId(event.target.value)
+                    setConfirmRoomDeletion(false)
+                    setRoomManagementError(null)
+                    setRoomManagementSuccess(null)
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 disabled:bg-slate-50"
+                >
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>{room.name}</option>
+                  ))}
+                </select>
+
+                {!confirmRoomDeletion ? (
+                  <button
+                    type="button"
+                    disabled={isDeletingRoom}
+                    onClick={() => {
+                      setRoomManagementError(null)
+                      setRoomManagementSuccess(null)
+                      setConfirmRoomDeletion(true)
+                    }}
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete selected room
+                  </button>
+                ) : (
+                  <div role="alertdialog" aria-live="assertive" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-semibold text-red-900">
+                      Delete {rooms.find((room) => room.id === selectedRoomId)?.name}?
+                    </p>
+                    <p className="mt-1 text-sm text-red-800">This action cannot be undone.</p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        disabled={isDeletingRoom}
+                        onClick={() => setConfirmRoomDeletion(false)}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDeletingRoom}
+                        onClick={handleDeleteRoom}
+                        className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {isDeletingRoom ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        {isDeletingRoom ? 'Deleting...' : 'Confirm delete'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                No room types are listed under this property.
               </p>
             )}
           </div>
